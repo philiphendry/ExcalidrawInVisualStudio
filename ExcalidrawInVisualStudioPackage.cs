@@ -33,8 +33,6 @@ namespace ExcalidrawInVisualStudio
     [PackageRegistration(UseManagedResourcesOnly = true, AllowsBackgroundLoading = true)]
     [Guid(ExcalidrawInVisualStudioPackage.PackageGuidString)]
     [ProvideLanguageExtension("{8B382828-6202-11D1-8870-0000F87579D2}", ".excalidraw")]
-    [ProvideMenuResource("Menus.ctmenu", 1)]
-    [ProvideToolWindow(typeof(ToolWindow))]
     [ProvideEditorExtension(typeof(ExcalidrawEditorFactory), ".excalidraw", 50)]
     public sealed class ExcalidrawInVisualStudioPackage : AsyncPackage, IDisposable
     {
@@ -60,30 +58,8 @@ namespace ExcalidrawInVisualStudio
             // Do any initialization that requires the UI thread after switching to the UI thread.
             await this.JoinableTaskFactory.SwitchToMainThreadAsync(cancellationToken);
 
-            // await ToolWindowCommand.InitializeAsync(this);
-
             _editorFactory = new ExcalidrawEditorFactory();
             RegisterEditorFactory(_editorFactory);
-
-
-            //var dte = await GetServiceAsync(typeof(DTE)) as DTE2;
-            //dte.Events.DocumentEvents.DocumentOpened += DocumentEvents_DocumentOpened;
-        }
-
-        private void DocumentEvents_DocumentOpened(Document document)
-        {
-            // Check if the document has the .excalidraw extension
-            if (Path.GetExtension(document.FullName).Equals(".excalidraw", StringComparison.OrdinalIgnoreCase))
-            {
-                // Open the custom window
-                var window = FindToolWindow(typeof(ToolWindow), 0, true);
-                if ((null == window) || (null == window.Frame))
-                {
-                    throw new NotSupportedException("Cannot create tool window");
-                }
-                IVsWindowFrame windowFrame = (IVsWindowFrame)window.Frame;
-                Microsoft.VisualStudio.ErrorHandler.ThrowOnFailure(windowFrame.Show());
-            }
         }
 
         #endregion
