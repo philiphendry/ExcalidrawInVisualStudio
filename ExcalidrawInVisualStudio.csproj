@@ -49,9 +49,15 @@
     <Compile Include="ExcalidrawInVisualStudioPackage.cs" />
   </ItemGroup>
   <ItemGroup>
+    <Content Include="ItemTemplates\EmptyExcalidraw.zip">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+      <IncludeInVSIX>true</IncludeInVSIX>
+    </Content>
     <None Include="source.extension.vsixmanifest">
       <SubType>Designer</SubType>
     </None>
+    <None Include="Templates\EmptyExcalidraw.zip" />
+    <None Include="Templates\EmptyExcalidraw\EmptyExcalidraw.excalidraw" />
   </ItemGroup>
   <ItemGroup>
     <Reference Include="System" />
@@ -60,6 +66,18 @@
     <PackageReference Include="Microsoft.VisualStudio.SDK" Version="17.0.32112.339" ExcludeAssets="runtime" />
     <PackageReference Include="Microsoft.VSSDK.BuildTools" Version="17.9.3184" />
   </ItemGroup>
+  <ItemGroup>
+    <Content Include="Templates\EmptyExcalidraw\EmptyExcalidraw.vstemplate" />
+    <Content Include="Templates\EmptyExcalidraw\__PreviewImage.png">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+      <IncludeInVSIX>true</IncludeInVSIX>
+    </Content>
+    <Content Include="Templates\EmptyExcalidraw\__TemplateIcon.png">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+      <IncludeInVSIX>true</IncludeInVSIX>
+    </Content>
+  </ItemGroup>
+  <ItemGroup />
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <Import Project="$(VSToolsPath)\VSSDK\Microsoft.VsSDK.targets" Condition="'$(VSToolsPath)' != ''" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 

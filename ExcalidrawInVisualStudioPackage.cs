@@ -25,6 +25,7 @@ namespace ExcalidrawInVisualStudio
     /// </remarks>
     [PackageRegistration(UseManagedResourcesOnly = true, AllowsBackgroundLoading = true)]
     [Guid(ExcalidrawInVisualStudioPackage.PackageGuidString)]
+    [ProvideLanguageExtension("{8B382828-6202-11D1-8870-0000F87579D2}", ".excalidraw")]
     public sealed class ExcalidrawInVisualStudioPackage : AsyncPackage
     {
         /// <summary>

@@ -1,0 +1,17 @@
+<VSTemplate 
+	Version="3.0.0" 
+	xmlns="http://schemas.microsoft.com/developer/vstemplate/2005" 
+	Type="Item">
+  <TemplateData>
+    <DefaultName>drawing.excalidraw</DefaultName>
+    <Name>Excalidraw file</Name>
+    <Description>A blank Excalidraw drawing.</Description>
+    <Icon>__TemplateIcon.png</Icon>
+    <PreviewImage>__PreviewImage.png</PreviewImage>
+	<ProjectType>CSharp</ProjectType>
+	<TemplateGroupID>General</TemplateGroupID>
+  </TemplateData>
+  <TemplateContent>
+    <ProjectItem>EmptyExcalidraw.excalidraw</ProjectItem>
+  </TemplateContent>
+</VSTemplate>
