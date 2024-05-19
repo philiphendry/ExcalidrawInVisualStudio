@@ -54,11 +54,12 @@
     <VSCTCompile Include="ExcalidrawInVisualStudioPackage.vsct">
       <ResourceName>Menus.ctmenu</ResourceName>
     </VSCTCompile>
+    <Content Include="Assets\excalidraw-logo.svg" />
+    <Content Include="Assets\favicon.png" />
     <Content Include="ItemTemplates\EmptyExcalidraw.zip">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
       <IncludeInVSIX>true</IncludeInVSIX>
     </Content>
-    <None Include="README.md" />
     <None Include="source.extension.vsixmanifest">
       <SubType>Designer</SubType>
     </None>
