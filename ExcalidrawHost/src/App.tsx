@@ -1,41 +1,41 @@
-import { useState } from 'react';
+/* eslint-disable @typescript-eslint/no-explicit-any */
+import { useState, useEffect } from 'react';
 import { Excalidraw } from '@excalidraw/excalidraw';
 import { BinaryFileData, ExcalidrawImperativeAPI } from '@excalidraw/excalidraw/types/types';
-import initialData from './initialData';
-import './App.css'
+
+
+(window as any).interop = {
+    load: function (data: any): void {
+        const loadEvent = new CustomEvent('loadScene', { detail: data });
+        window.dispatchEvent(loadEvent);
+    },
+};
 
 function App() {
-    const [excalidrawAPI, setExcalidrawAPI] = useState<ExcalidrawImperativeAPI | null>(null);
+    const [excalidrawAPI, setExcalidrawAPI] = useState<ExcalidrawImperativeAPI>();
 
-    function loadScene() {
-        console.log('loadScene');
-        const fetchData = async () => {
-            try {
-                const response = await fetch('example.excalidraw');
-                const data = await response.json();
-                excalidrawAPI!.updateScene(data);
-                const filesArray: BinaryFileData[] = Object.values(data.files);
-                excalidrawAPI!.addFiles(filesArray);
-            } catch (error) {
-                console.error('Error fetching JSON:', error);
-            }
+    useEffect(() => {
+        const handleLoadScene = (event: CustomEvent<any>): void => loadSceneFromHost(event.detail);
+        window.addEventListener('loadScene', handleLoadScene as EventListener);
+        return () => {
+            window.removeEventListener('loadScene', handleLoadScene as EventListener);
         };
-        fetchData();
+    }, [excalidrawAPI]);
+
+    function loadSceneFromHost(data: any) {
+        excalidrawAPI!.updateScene(data);
+        const filesArray: BinaryFileData[] = Object.values(data.files);
+        excalidrawAPI!.addFiles(filesArray);
     }
 
     return (
         <>
-            <h1>Excalidraw Examples</h1>
-            <div style={{ height: '300px' }}>
-                <Excalidraw initialData={initialData} />
-            </div>
-            <div style={{ height: '300px' }}>
+            <div style={{ width: '100vw', height: '100vh' }}>
                 <Excalidraw
                     excalidrawAPI={(api) => { setExcalidrawAPI(api); }} />
             </div>
-            <button onClick={loadScene}>Load Scene</button>
         </>
     )
 }
 
-export default App
+export default App;
