@@ -56,10 +56,10 @@
     </VSCTCompile>
     <Content Include="Assets\excalidraw-logo.svg" />
     <Content Include="Assets\favicon.png" />
-    <Content Include="Editor\assets\index-Bepfy9i4.js">
+    <Content Include="Editor\assets\index-BPvgi06w.css">
       <IncludeInVSIX>true</IncludeInVSIX>
     </Content>
-    <Content Include="Editor\assets\index-BPvgi06w.css">
+    <Content Include="Editor\assets\index-HkccOzVr.js">
       <IncludeInVSIX>true</IncludeInVSIX>
     </Content>
     <Content Include="Editor\index.html">
@@ -89,7 +89,17 @@
     <Reference Include="WindowsBase" />
   </ItemGroup>
   <ItemGroup>
-    <PackageReference Include="Microsoft.VisualStudio.SDK" Version="17.0.32112.339" ExcludeAssets="runtime" />
+    <PackageReference Include="Community.VisualStudio.Toolkit.17">
+      <Version>17.0.507</Version>
+    </PackageReference>
+    <PackageReference Include="Community.VisualStudio.VSCT">
+      <Version>16.0.29.6</Version>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+      <PrivateAssets>all</PrivateAssets>
+    </PackageReference>
+    <PackageReference Include="Microsoft.VisualStudio.SDK" Version="17.9.37000" ExcludeAssets="runtime">
+      <IncludeAssets>compile; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+    </PackageReference>
     <PackageReference Include="Microsoft.VSSDK.BuildTools" Version="17.9.3184" />
     <PackageReference Include="Microsoft.Web.WebView2">
       <Version>1.0.2478.35</Version>

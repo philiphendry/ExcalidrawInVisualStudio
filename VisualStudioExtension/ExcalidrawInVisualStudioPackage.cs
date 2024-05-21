@@ -1,9 +1,11 @@
-﻿using Microsoft.VisualStudio.Shell;
+﻿using EnvDTE;
+using Microsoft.VisualStudio.Shell;
 using System;
 using System.Diagnostics;
 using System.Globalization;
 using System.Runtime.InteropServices;
 using System.Threading;
+using EnvDTE80;
 using Task = System.Threading.Tasks.Task;
 
 namespace ExcalidrawInVisualStudio
@@ -53,7 +55,9 @@ namespace ExcalidrawInVisualStudio
             // Do any initialization that requires the UI thread after switching to the UI thread.
             await this.JoinableTaskFactory.SwitchToMainThreadAsync(cancellationToken);
 
-            _editorFactory = new ExcalidrawEditorFactory();
+            var dte = await GetServiceAsync(typeof(DTE)) as DTE2;
+
+            _editorFactory = new ExcalidrawEditorFactory(dte);
             RegisterEditorFactory(_editorFactory);
         }
 
