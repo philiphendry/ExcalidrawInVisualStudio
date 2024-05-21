@@ -1,52 +1,64 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import { useState, useEffect } from 'react';
 import { Excalidraw } from '@excalidraw/excalidraw';
 import { BinaryFileData, ExcalidrawImperativeAPI, UIOptions } from '@excalidraw/excalidraw/types/types';
 
+let excalidrawApi: ExcalidrawImperativeAPI | null = null;
+
+interface Interop {
+    loadScene: (data: any) => void;
+    getScene: () => any;
+}
+
 (window as any).interop = {
-    load: function (data: any): void {
-        const loadEvent = new CustomEvent('loadScene', { detail: data });
-        window.dispatchEvent(loadEvent);
+    excalidrawApi: null,
+    loadScene: function (sceneData: any): void {
+        excalidrawApi!.updateScene(sceneData);
+        const filesArray: BinaryFileData[] = Object.values(sceneData.files);
+        excalidrawApi!.addFiles(filesArray);
     },
-    getSceneAsync: async function () {
-        const promise = new Promise<any>((resolve, reject) => {
-            const getSceneEvent = new CustomEvent('getScene', { detail: { resolve, reject } });
-            window.dispatchEvent(getSceneEvent);
-        });
-        const sceneData : any = await promise;
-        return sceneData;
+    getScene: function () {
+        const elements = excalidrawApi!.getSceneElements();
+        const appState = excalidrawApi!.getAppState();
+        const files = { ...excalidrawApi!.getFiles() };
+        if (files) {
+            const imageIds = elements.filter((e : any) => e.type === "image").map((e : any) => e.fileId);
+            const toDelete = Object.keys(files).filter((k) => !imageIds.includes(k));
+            toDelete.forEach((k) => delete files[k]);
+        }
+        return {
+            type: "excalidraw",
+            version: 2,
+            source: "https://philiphendry.me.uk/excalidrawinvisualstudio",
+            elements,
+            appState: {
+                theme: appState.theme,
+                viewBackgroundColor: appState.viewBackgroundColor,
+                currentItemStrokeColor: appState.currentItemStrokeColor,
+                currentItemBackgroundColor: appState.currentItemBackgroundColor,
+                currentItemFillStyle: appState.currentItemFillStyle,
+                currentItemStrokeWidth: appState.currentItemStrokeWidth,
+                currentItemStrokeStyle: appState.currentItemStrokeStyle,
+                currentItemRoughness: appState.currentItemRoughness,
+                currentItemOpacity: appState.currentItemOpacity,
+                currentItemFontFamily: appState.currentItemFontFamily,
+                currentItemFontSize: appState.currentItemFontSize,
+                currentItemTextAlign: appState.currentItemTextAlign,
+                currentItemStartArrowhead: appState.currentItemStartArrowhead,
+                currentItemEndArrowhead: appState.currentItemEndArrowhead,
+                scrollX: appState.scrollX,
+                scrollY: appState.scrollY,
+                zoom: appState.zoom,
+                currentItemRoundness: appState.currentItemRoundness,
+                gridSize: appState.gridSize,
+                frameRendering: appState.frameRendering,
+                objectsSnapModeEnabled: appState.objectsSnapModeEnabled,
+            },
+            files
+        };
     }
-};
+} as Interop;
 
 function App() {
-    const [excalidrawAPI, setExcalidrawAPI] = useState<ExcalidrawImperativeAPI>();
-
-    useEffect(() => {
-        function handleLoadScene(event: CustomEvent<any>): void {
-            const sceneData = event.detail;
-            excalidrawAPI!.updateScene(sceneData);
-            const filesArray: BinaryFileData[] = Object.values(sceneData.files);
-            excalidrawAPI!.addFiles(filesArray);
-        }
-
-        function handleGetScene(event: CustomEvent<any>): void {
-            const { resolve, reject } = event.detail;
-            try {
-                const sceneElements = excalidrawAPI!.getSceneElements();
-                resolve(sceneElements);
-            } catch (error) {
-                reject(error);
-            }
-        }
-
-        window.addEventListener('loadScene', handleLoadScene as EventListener);
-        window.addEventListener('getScene', handleGetScene as EventListener);
-        return () => {
-            window.removeEventListener('loadScene', handleLoadScene as EventListener);
-            window.removeEventListener('getScene', handleGetScene as EventListener);
-        };
-    }, [excalidrawAPI]);
-
     const uiOptions : UIOptions = {
         canvasActions: {
             loadScene: false,
@@ -57,7 +69,7 @@ function App() {
     return (
         <div style={{ width: '100vw', height: '100vh' }}>
             <Excalidraw
-                excalidrawAPI={(api) => { setExcalidrawAPI(api); }}
+                excalidrawAPI={(api) => { excalidrawApi = api; }}
                 UIOptions={uiOptions}
                 />
         </div>

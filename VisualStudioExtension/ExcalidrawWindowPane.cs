@@ -47,9 +47,10 @@ public class ExcalidrawWindowPane : ToolWindowPane
         _documentEvents.DocumentSaved += DocumentEvents_DocumentSaved;
     }
 
-    private void DocumentEvents_DocumentSaved(Document document)
+    private async void DocumentEvents_DocumentSaved(Document document)
     {
-        
+        var sceneData = await _webView.ExecuteScriptAsync("window.interop.getScene()");
+        File.WriteAllText(_file, sceneData);
     }
 
     private void _webView_Initialized(object sender, EventArgs e)
@@ -85,7 +86,7 @@ public class ExcalidrawWindowPane : ToolWindowPane
         {
             // TODO Hack to wait for Excalidraw to have loaded
             await Task.Delay(250);
-            await _webView.ExecuteScriptAsync($"window.interop.load({File.ReadAllText(_file)})");
+            await _webView.ExecuteScriptAsync($"window.interop.loadScene({File.ReadAllText(_file)})");
         }
         catch (Exception exception)
         {
