@@ -4,15 +4,21 @@ import { BinaryFileData, ExcalidrawImperativeAPI, UIOptions } from '@excalidraw/
 import { ExcalidrawElement } from '@excalidraw/excalidraw/types/element/types';
 
 let excalidrawApi: ExcalidrawImperativeAPI | null = null;
+let currentVersionSum: number = 0;
 
 interface Interop {
     loadScene: (data: any) => void;
     getScene: () => any;
 }
 
+function calculateElementVersionSum(elements: readonly ExcalidrawElement[]): number {
+    return elements.reduce((acc: number, e: ExcalidrawElement) => acc + e.version, 0);
+}
+
 (window as any).interop = {
-    excalidrawApi: null,
     loadScene: function (sceneData: any): void {
+        // Update the current version sum so we don't raise onChange event back to the host.
+        currentVersionSum = calculateElementVersionSum(sceneData.elements);
         excalidrawApi!.updateScene(sceneData);
         const filesArray: BinaryFileData[] = Object.values(sceneData.files);
         excalidrawApi!.addFiles(filesArray);
@@ -75,7 +81,6 @@ function App() {
         }
     };
 
-    let currentVersionSum: number = 0;
     let cancelTimeoutId: number = 0;
 
     // Report change events back to the host but debouncing them so we don't spam the host
@@ -86,7 +91,7 @@ function App() {
             clearTimeout(cancelTimeoutId);
         }
         cancelTimeoutId = setTimeout(() => {
-            const versionSum: number = elements.reduce((acc: number, e: ExcalidrawElement) => acc + e.version, 0);
+            const versionSum: number = calculateElementVersionSum(elements);
             if (versionSum === currentVersionSum) {
                 return;
             }
@@ -98,7 +103,7 @@ function App() {
     return (
         <div style={{ width: '100vw', height: '100vh' }}>
             <Excalidraw
-                excalidrawAPI={(api) => { excalidrawApi = api; (window as any).interop.excalidraw = api; }}
+                excalidrawAPI={(api) => { excalidrawApi = api; }}
                 UIOptions={uiOptions}
                 onChange={ handleOnChangeEvent }
                 />

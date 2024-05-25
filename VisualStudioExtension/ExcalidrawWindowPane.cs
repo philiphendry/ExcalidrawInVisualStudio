@@ -86,6 +86,8 @@ public class ExcalidrawWindowPane : WindowPane, IVsPersistDocData
 
     private void LoadScene()
     {
+        _isDirty = false;
+
         // TODO parse JSON to check it's the correct format
         ThreadHelper.JoinableTaskFactory.RunAsync(async () =>
         {
