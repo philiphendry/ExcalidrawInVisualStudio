@@ -1,6 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { Excalidraw } from '@excalidraw/excalidraw';
 import { BinaryFileData, ExcalidrawImperativeAPI, UIOptions } from '@excalidraw/excalidraw/types/types';
+import { ExcalidrawElement } from '@excalidraw/excalidraw/types/element/types';
 
 let excalidrawApi: ExcalidrawImperativeAPI | null = null;
 
@@ -74,12 +75,32 @@ function App() {
         }
     };
 
+    let currentVersionSum: number = 0;
+    let cancelTimeoutId: number = 0;
+
+    // Report change events back to the host but debouncing them so we don't spam the host
+    // and using the sum of version numbers across elements to detect changes as otherwise
+    // moving the mouse causes changes events to be fired even when nothing has changed.
+    function handleOnChangeEvent(elements: readonly ExcalidrawElement[]) {
+        if (cancelTimeoutId) {
+            clearTimeout(cancelTimeoutId);
+        }
+        cancelTimeoutId = setTimeout(() => {
+            const versionSum: number = elements.reduce((acc: number, e: ExcalidrawElement) => acc + e.version, 0);
+            if (versionSum === currentVersionSum) {
+                return;
+            }
+            currentVersionSum = versionSum;
+            (window as any).chrome.webview.postMessage({ event: 'onChange', versionSum: versionSum });
+        }, 100);
+    }
+
     return (
         <div style={{ width: '100vw', height: '100vh' }}>
             <Excalidraw
-                excalidrawAPI={(api) => { excalidrawApi = api; }}
+                excalidrawAPI={(api) => { excalidrawApi = api; (window as any).interop.excalidraw = api; }}
                 UIOptions={uiOptions}
-                onChange={ () => { (window as any).chrome.webview.postMessage({ event: 'onChange' }); } }
+                onChange={ handleOnChangeEvent }
                 />
         </div>
     )
