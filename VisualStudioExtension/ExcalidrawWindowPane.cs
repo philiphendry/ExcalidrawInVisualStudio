@@ -9,6 +9,8 @@ using System.Threading.Tasks;
 using Microsoft.VisualStudio.Shell.Interop;
 using Debugger = System.Diagnostics.Debugger;
 using Microsoft.VisualStudio;
+using System.Diagnostics;
+using System.Text.Json;
 
 [Guid("55415F2D-3595-4DA8-87DF-3F9388DAD6C2")]
 public class ExcalidrawWindowPane : WindowPane, IVsPersistDocData
@@ -24,7 +26,7 @@ public class ExcalidrawWindowPane : WindowPane, IVsPersistDocData
         base.Initialize();
         _webView.Initialized += WebView_Initialized;
     }
-        
+
     private void WebView_Initialized(object sender, EventArgs e)
     {
         _webView.Initialized -= WebView_Initialized;
@@ -35,6 +37,7 @@ public class ExcalidrawWindowPane : WindowPane, IVsPersistDocData
             await _webView.EnsureCoreWebView2Async(webView2Environment);
 
             _webView.CoreWebView2.DOMContentLoaded += CoreWebView2_DOMContentLoaded;
+            _webView.CoreWebView2.WebMessageReceived += CoreWebView2_WebMessageReceived;
             _webView.CoreWebView2.SetVirtualHostNameToFolderMapping("excalidraw-editor-host", Path.Combine(GetFolder(), "editor"), CoreWebView2HostResourceAccessKind.Allow);
 
             if (Debugger.IsAttached)
@@ -47,8 +50,27 @@ public class ExcalidrawWindowPane : WindowPane, IVsPersistDocData
         });
     }
 
+    private void CoreWebView2_WebMessageReceived(object sender, CoreWebView2WebMessageReceivedEventArgs e)
+    {
+        try
+        {
+            var json = e.WebMessageAsJson;
+            var document = JsonDocument.Parse(json);
+            var root = document.RootElement;
+            var eventType = root.GetProperty("event").GetString();
+            if (eventType == "onChange")
+            {
+                _isDirty = true;
+            }
+        }
+        catch (Exception exception)
+        {
+            Trace.WriteLine($"Error in CoreWebView2_WebMessageReceived: {exception}");
+        }
+    }
+
     private async void CoreWebView2_DOMContentLoaded(object sender, CoreWebView2DOMContentLoadedEventArgs e)
-    {        
+    {
         try
         {
             //// TODO Hack to wait for Excalidraw to have loaded
@@ -90,6 +112,8 @@ public class ExcalidrawWindowPane : WindowPane, IVsPersistDocData
         {
             return;
         }
+        _webView.CoreWebView2.DOMContentLoaded -= CoreWebView2_DOMContentLoaded;
+        _webView.CoreWebView2.WebMessageReceived -= CoreWebView2_WebMessageReceived;
         _webView.Dispose();
         _isDisposed = true;
     }
@@ -143,7 +167,7 @@ public class ExcalidrawWindowPane : WindowPane, IVsPersistDocData
 
                 case VSSAVEFLAGS.VSSAVE_SaveAs:
                 case VSSAVEFLAGS.VSSAVE_SaveCopyAs:
-                    
+
                     Debugger.Break();
 
                     // TODO: Implement your logic to handle "Save As" operations.

@@ -55,8 +55,16 @@ interface Interop {
             },
             files
         };
-    }
+    }    
 } as Interop;
+
+if ((window as any).chrome.webview === undefined) {
+    (window as any).chrome.webview = {
+        postMessage: (json: any) => {
+            console.warn("Message posted to WebView host: ", json)
+        }
+    };
+}
 
 function App() {
     const uiOptions : UIOptions = {
@@ -71,6 +79,7 @@ function App() {
             <Excalidraw
                 excalidrawAPI={(api) => { excalidrawApi = api; }}
                 UIOptions={uiOptions}
+                onChange={ () => { (window as any).chrome.webview.postMessage({ event: 'onChange' }); } }
                 />
         </div>
     )
