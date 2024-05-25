@@ -56,13 +56,7 @@
     </VSCTCompile>
     <Content Include="Assets\excalidraw-logo.svg" />
     <Content Include="Assets\favicon.png" />
-    <Content Include="Editor\assets\index-a6S96tLD.js">
-      <IncludeInVSIX>true</IncludeInVSIX>
-    </Content>
-    <Content Include="Editor\assets\index-BPvgi06w.css">
-      <IncludeInVSIX>true</IncludeInVSIX>
-    </Content>
-    <Content Include="Editor\index.html">
+    <Content Include="Editor\**\*">
       <IncludeInVSIX>true</IncludeInVSIX>
     </Content>
     <Content Include="ItemTemplates\EmptyExcalidraw.zip">

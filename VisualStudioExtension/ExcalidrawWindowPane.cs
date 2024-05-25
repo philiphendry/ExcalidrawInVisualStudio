@@ -45,8 +45,10 @@ public class ExcalidrawWindowPane : WindowPane, IVsPersistDocData
                 _webView.CoreWebView2.OpenDevToolsWindow();
             }
 
-            var indexHtml = Path.Combine(GetFolder(), "editor", "index.html");
-            _webView.NavigateToString(File.ReadAllText(indexHtml));
+            var indexHtmlPath = Path.Combine(GetFolder(), "editor", "index.html");
+            var indexHtmlContent = File.ReadAllText(indexHtmlPath);
+            indexHtmlContent = indexHtmlContent.Replace("<!--replace-with-web-view-base-url-->", "<base href=\"http://excalidraw-editor-host/\" />");
+            _webView.NavigateToString(indexHtmlContent);
         });
     }
 
