@@ -11,11 +11,12 @@ using Debugger = System.Diagnostics.Debugger;
 using Microsoft.VisualStudio;
 using System.Diagnostics;
 using System.Text.Json;
+using Microsoft.VisualStudio.Threading;
 
 [Guid("55415F2D-3595-4DA8-87DF-3F9388DAD6C2")]
 public class ExcalidrawWindowPane : WindowPane, IVsPersistDocData
 {
-    private string _file;
+    private string _filename;
     private bool _isDisposed;
     private readonly WebView2 _webView = new WebView2() { HorizontalAlignment = System.Windows.HorizontalAlignment.Stretch };
 
@@ -36,7 +37,6 @@ public class ExcalidrawWindowPane : WindowPane, IVsPersistDocData
             var webView2Environment = await CoreWebView2Environment.CreateAsync(null, tempDir, null);
             await _webView.EnsureCoreWebView2Async(webView2Environment);
 
-            _webView.CoreWebView2.DOMContentLoaded += CoreWebView2_DOMContentLoaded;
             _webView.CoreWebView2.WebMessageReceived += CoreWebView2_WebMessageReceived;
             _webView.CoreWebView2.SetVirtualHostNameToFolderMapping("excalidraw-editor-host", Path.Combine(GetFolder(), "editor"), CoreWebView2HostResourceAccessKind.Allow);
 
@@ -63,26 +63,16 @@ public class ExcalidrawWindowPane : WindowPane, IVsPersistDocData
             if (eventType == "onChange")
             {
                 _isDirty = true;
+            } 
+            else if (eventType == "onReady")
+            {
+                // Set the TaskCompletionSource to true to indicate the WebView has been initialised
+                _webViewInitialisedTaskSource.SetResult(true);
             }
         }
         catch (Exception exception)
         {
             Trace.WriteLine($"Error in CoreWebView2_WebMessageReceived: {exception}");
-        }
-    }
-
-    private async void CoreWebView2_DOMContentLoaded(object sender, CoreWebView2DOMContentLoadedEventArgs e)
-    {
-        try
-        {
-            //// TODO Hack to wait for Excalidraw to have loaded
-            await Task.Delay(250);
-            _webViewInitialisedTaskSource.SetResult(true);
-        }
-        catch (Exception exception)
-        {
-            var exceptionHtml = $"<p>An unexpected exception occurred:</p><pre>{exception.ToString().Replace("<", "&lt;").Replace("&", "&amp;")}</pre>";
-            _webView.NavigateToString(exceptionHtml);
         }
     }
 
@@ -93,9 +83,10 @@ public class ExcalidrawWindowPane : WindowPane, IVsPersistDocData
         // TODO parse JSON to check it's the correct format
         ThreadHelper.JoinableTaskFactory.RunAsync(async () =>
         {
-            await _webViewInitialisedTaskSource.Task;
+            // Wait for the WebView to be initialised
+            await _webViewInitialisedTaskSource.Task.WithTimeout(TimeSpan.FromSeconds(2));
 
-            var sceneData = File.ReadAllText(_file);
+            var sceneData = File.ReadAllText(_filename);
             await _webView.ExecuteScriptAsync($"window.interop.loadScene({sceneData})");
         }).FileAndForget("excalidraw");
     }
@@ -116,7 +107,6 @@ public class ExcalidrawWindowPane : WindowPane, IVsPersistDocData
         {
             return;
         }
-        _webView.CoreWebView2.DOMContentLoaded -= CoreWebView2_DOMContentLoaded;
         _webView.CoreWebView2.WebMessageReceived -= CoreWebView2_WebMessageReceived;
         _webView.Dispose();
         _isDisposed = true;
@@ -139,13 +129,13 @@ public class ExcalidrawWindowPane : WindowPane, IVsPersistDocData
 
     public int SetUntitledDocPath(string pszDocDataPath)
     {
-        _file = pszDocDataPath;
+        _filename = pszDocDataPath;
         return VSConstants.S_OK;
     }
 
     public int LoadDocData(string pszMkDocument)
     {
-        _file = pszMkDocument;
+        _filename = pszMkDocument;
         LoadScene();
         return VSConstants.S_OK;
     }
@@ -164,7 +154,7 @@ public class ExcalidrawWindowPane : WindowPane, IVsPersistDocData
                     ThreadHelper.JoinableTaskFactory.RunAsync(async () =>
                     {
                         var sceneData = await _webView.ExecuteScriptAsync("window.interop.getScene()");
-                        File.WriteAllText(_file, sceneData);
+                        File.WriteAllText(_filename, sceneData);
                     }).FileAndForget("excalidraw");
 
                     break;

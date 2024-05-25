@@ -103,7 +103,10 @@ function App() {
     return (
         <div style={{ width: '100vw', height: '100vh' }}>
             <Excalidraw
-                excalidrawAPI={(api) => { excalidrawApi = api; }}
+                excalidrawAPI={(api) => {
+                    excalidrawApi = api;
+                    (window as any).chrome.webview.postMessage({ event: 'onReady' });
+                }}
                 UIOptions={uiOptions}
                 onChange={ handleOnChangeEvent }
                 />
