@@ -57,7 +57,7 @@ namespace ExcalidrawInVisualStudio
 
             var dte = await GetServiceAsync(typeof(DTE)) as DTE2;
 
-            _editorFactory = new ExcalidrawEditorFactory(dte);
+            _editorFactory = new ExcalidrawEditorFactory();
             RegisterEditorFactory(_editorFactory);
         }
 

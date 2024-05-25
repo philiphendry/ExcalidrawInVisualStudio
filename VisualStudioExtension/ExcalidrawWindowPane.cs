@@ -6,60 +6,28 @@ using Microsoft.Web.WebView2.Core;
 using Microsoft.Web.WebView2.Wpf;
 using System.Reflection;
 using System.Threading.Tasks;
-using EnvDTE;
-using EnvDTE80;
+using Microsoft.VisualStudio.Shell.Interop;
 using Debugger = System.Diagnostics.Debugger;
+using Microsoft.VisualStudio;
 
 [Guid("55415F2D-3595-4DA8-87DF-3F9388DAD6C2")]
-public class ExcalidrawWindowPane : ToolWindowPane
+public class ExcalidrawWindowPane : WindowPane, IVsPersistDocData
 {
-    private readonly string _file;
+    private string _file;
     private bool _isDisposed;
     private readonly WebView2 _webView = new WebView2() { HorizontalAlignment = System.Windows.HorizontalAlignment.Stretch };
 
-    private readonly DTE2 _dte;
-    private DocumentEvents _documentEvents;
+    private readonly TaskCompletionSource<bool> _webViewInitialisedTaskSource = new TaskCompletionSource<bool>(false);
 
-    public ExcalidrawWindowPane(DTE2 dte, string file) : base(null)
+    public ExcalidrawWindowPane() : base(null)
     {
         base.Initialize();
+        _webView.Initialized += WebView_Initialized;
+    }
         
-        _file = file;
-        _dte = dte;
-
-        BitmapImageMoniker = new Microsoft.VisualStudio.Imaging.Interop.ImageMoniker
-        {
-            Guid = new Guid("b2f7f8e2-4687-4f3b-8b3b-7f4d5f9d5d3a"),
-            Id = 301
-        };
-        BitmapIndex = 1;
-
-        _webView.Initialized += _webView_Initialized;
-
-        InitialiseDocumentEventsAsync().ConfigureAwait(false);
-    }
-
-    private async Task InitialiseDocumentEventsAsync()
+    private void WebView_Initialized(object sender, EventArgs e)
     {
-        await ThreadHelper.JoinableTaskFactory.SwitchToMainThreadAsync();        
-
-        _documentEvents = _dte.Events.DocumentEvents;
-        _documentEvents.DocumentSaved += DocumentEvents_DocumentSaved;
-    }
-
-    private async void DocumentEvents_DocumentSaved(Document document)
-    {
-        var sceneData = await _webView.ExecuteScriptAsync("window.interop.getScene()");
-        File.WriteAllText(_file, sceneData);
-    }
-
-    private void _webView_Initialized(object sender, EventArgs e)
-    {        
-        InitialiseBrowserAsync();
-    }
-
-    private async Task InitialiseBrowserAsync()
-    {
+        _webView.Initialized -= WebView_Initialized;
         ThreadHelper.JoinableTaskFactory.RunAsync(async () =>
         {
             var tempDir = Path.Combine(Path.GetTempPath(), Assembly.GetExecutingAssembly().GetName().Name);
@@ -80,19 +48,30 @@ public class ExcalidrawWindowPane : ToolWindowPane
     }
 
     private async void CoreWebView2_DOMContentLoaded(object sender, CoreWebView2DOMContentLoadedEventArgs e)
-    {
-        // TODO parse JSON to check it's the correct format
+    {        
         try
         {
-            // TODO Hack to wait for Excalidraw to have loaded
+            //// TODO Hack to wait for Excalidraw to have loaded
             await Task.Delay(250);
-            await _webView.ExecuteScriptAsync($"window.interop.loadScene({File.ReadAllText(_file)})");
+            _webViewInitialisedTaskSource.SetResult(true);
         }
         catch (Exception exception)
         {
             var exceptionHtml = $"<p>An unexpected exception occurred:</p><pre>{exception.ToString().Replace("<", "&lt;").Replace("&", "&amp;")}</pre>";
             _webView.NavigateToString(exceptionHtml);
         }
+    }
+
+    private void LoadScene()
+    {
+        // TODO parse JSON to check it's the correct format
+        ThreadHelper.JoinableTaskFactory.RunAsync(async () =>
+        {
+            await _webViewInitialisedTaskSource.Task;
+
+            var sceneData = File.ReadAllText(_file);
+            await _webView.ExecuteScriptAsync($"window.interop.loadScene({sceneData})");
+        }).FileAndForget("excalidraw");
     }
 
     public static string GetFolder()
@@ -111,10 +90,123 @@ public class ExcalidrawWindowPane : ToolWindowPane
         {
             return;
         }
-        _webView.Initialized -= _webView_Initialized;
-        _webView.CoreWebView2.DOMContentLoaded -= CoreWebView2_DOMContentLoaded;
         _webView.Dispose();
-        _documentEvents.DocumentSaved -= DocumentEvents_DocumentSaved;
         _isDisposed = true;
     }
+
+    #region IVsPersistDocData
+    private bool _isDirty;
+
+    public int GetGuidEditorType(out Guid pClassID)
+    {
+        pClassID = new Guid("51C27119-216E-4656-BD87-DF82198AB01F");
+        return VSConstants.S_OK;
+    }
+
+    public int IsDocDataDirty(out int pfDirty)
+    {
+        pfDirty = _isDirty ? 1 : 0;
+        return VSConstants.S_OK;
+    }
+
+    public int SetUntitledDocPath(string pszDocDataPath)
+    {
+        _file = pszDocDataPath;
+        return VSConstants.S_OK;
+    }
+
+    public int LoadDocData(string pszMkDocument)
+    {
+        _file = pszMkDocument;
+        LoadScene();
+        return VSConstants.S_OK;
+    }
+
+    public int SaveDocData(VSSAVEFLAGS dwSave, out string pbstrMkDocumentNew, out int pfSaveCanceled)
+    {
+        pbstrMkDocumentNew = null;
+        pfSaveCanceled = 0;
+
+        try
+        {
+            switch (dwSave)
+            {
+                case VSSAVEFLAGS.VSSAVE_Save:
+                case VSSAVEFLAGS.VSSAVE_SilentSave:
+                    ThreadHelper.JoinableTaskFactory.RunAsync(async () =>
+                    {
+                        var sceneData = await _webView.ExecuteScriptAsync("window.interop.getScene()");
+                        File.WriteAllText(_file, sceneData);
+                    }).FileAndForget("excalidraw");
+
+                    break;
+
+                case VSSAVEFLAGS.VSSAVE_SaveAs:
+                case VSSAVEFLAGS.VSSAVE_SaveCopyAs:
+                    
+                    Debugger.Break();
+
+                    // TODO: Implement your logic to handle "Save As" operations.
+                    // This might involve showing a Save File dialog and then saving the data to the chosen file.
+                    // string newPath = ShowSaveFileDialog();
+                    // File.WriteAllText(newPath, serializedData);
+                    // pbstrMkDocumentNew = newPath;
+                    break;
+
+                default:
+                    return VSConstants.E_INVALIDARG;
+            }
+
+            // If the save operation was successful, clear the dirty flag.
+            _isDirty = false;
+
+            return VSConstants.S_OK;
+        }
+        catch (Exception ex)
+        {
+            // If an error occurs, return the error code.
+            return Marshal.GetHRForException(ex);
+        }
+    }
+
+    public int Close()
+    {
+        return VSConstants.S_OK;
+    }
+
+    public int OnRegisterDocData(uint docCookie, IVsHierarchy pHierNew, uint itemidNew)
+    {
+        return VSConstants.S_OK;
+    }
+
+    public int RenameDocData(uint grfAttribs, IVsHierarchy pHierNew, uint itemidNew, string pszMkDocumentNew)
+    {
+        return VSConstants.S_OK;
+    }
+
+    public int IsDocDataReloadable(out int pfReloadable)
+    {
+        pfReloadable = 1;
+        return VSConstants.S_OK;
+    }
+
+    public int ReloadDocData(uint grfFlags)
+    {
+        try
+        {
+            LoadScene();
+
+            // If the reload operation was successful, clear the dirty flag.
+            _isDirty = false;
+
+            return VSConstants.S_OK;
+        }
+        catch (Exception ex)
+        {
+            // If an error occurs, return the error code.
+            return Marshal.GetHRForException(ex);
+        }
+    }
+
+    #endregion
 }
