@@ -231,6 +231,9 @@ public class ExcalidrawWindowPane : WindowPane, IVsPersistDocData, IVsFileChange
     public int RenameDocData(uint grfAttribs, IVsHierarchy pHierNew, uint itemidNew, string pszMkDocumentNew)
     {
         ThreadHelper.ThrowIfNotOnUIThread();
+        SetFileChangeNotification(_filename, false);
+        _filename = pszMkDocumentNew;
+        SetFileChangeNotification(_filename, true);
         return VSConstants.S_OK;
     }
 
