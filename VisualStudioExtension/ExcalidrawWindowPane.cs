@@ -43,6 +43,7 @@ public class ExcalidrawWindowPane : WindowPane, IVsPersistDocData, IVsFileChange
 
     private void WebView_Initialized(object sender, EventArgs e)
     {
+        ThreadHelper.ThrowIfNotOnUIThread();
         _uiShell = (IVsUIShell)GetService(typeof(SVsUIShell));
 
         _webView.Initialized -= WebView_Initialized;
