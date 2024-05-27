@@ -70,8 +70,11 @@
       <Generator>VsctGenerator</Generator>
       <LastGenOutput>VSCommandTable.cs</LastGenOutput>
     </VSCTCompile>
-    <Content Include="Assets\excalidraw-logo.svg" />
-    <Content Include="Assets\favicon.png" />
+    <Content Include="Resources\excalidraw-large.png">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+      <IncludeInVSIX>true</IncludeInVSIX>
+    </Content>
+    <Content Include="Resources\excalidraw-logo.svg" />
     <Content Include="Editor\**\*">
       <IncludeInVSIX>true</IncludeInVSIX>
     </Content>
@@ -131,6 +134,11 @@
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
       <IncludeInVSIX>true</IncludeInVSIX>
     </Content>
+  </ItemGroup>
+  <ItemGroup>
+    <Resource Include="Resources\excalidraw-logo.xaml">
+      <Generator>MSBuild:Compile</Generator>
+    </Resource>
   </ItemGroup>
   <ItemGroup />
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
