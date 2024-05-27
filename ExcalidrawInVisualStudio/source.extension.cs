@@ -9,7 +9,7 @@ namespace ExcalidrawInVisualStudio
     {
         public const string Id = "10bf6342-1b19-4049-a8bf-6d7b763e4f38";
         public const string Name = "Excalidraw";
-        public const string Description = @"An extension for adding Excalidraw diagrams to Visual Studio and edit them.";
+        public const string Description = @"Add and edit Excalidraw diagrams inside Visual Studio.";
         public const string Language = "en-US";
         public const string Version = "0.1.0";
         public const string Author = "Philip Hendry";
