@@ -1,11 +1,12 @@
 <?xml version="1.0" encoding="utf-8"?>
 <PackageManifest Version="2.0.0" xmlns="http://schemas.microsoft.com/developer/vsx-schema/2011" xmlns:d="http://schemas.microsoft.com/developer/vsx-schema-design/2011">
     <Metadata>
-        <Identity Id="ExcalidrawInVisualStudio.10bf6342-1b19-4049-a8bf-6d7b763e4f38" Version="1.0" Language="en-US" Publisher="Philip Hendry" />
+        <Identity Id="10bf6342-1b19-4049-a8bf-6d7b763e4f38" Version="0.1.0" Language="en-US" Publisher="Philip Hendry" />
         <DisplayName>ExcalidrawInVisualStudio</DisplayName>
-        <Description xml:space="preserve">Empty VSIX Project.</Description>
+        <Description xml:space="preserve">An extension for adding Excalidraw diagrams to Visual Studio and edit them.</Description>
         <Icon>Templates\EmptyExcalidraw\__TemplateIcon.png</Icon>
         <PreviewImage>Templates\EmptyExcalidraw\__PreviewImage.png</PreviewImage>
+        <Preview>true</Preview>
     </Metadata>
     <Installation>
         <InstallationTarget Id="Microsoft.VisualStudio.Community" Version="[17.0, 18.0)">
