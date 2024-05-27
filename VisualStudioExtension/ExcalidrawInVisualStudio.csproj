@@ -48,11 +48,11 @@
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="Constants.cs" />
-    <Compile Include="ExcalidrawEditorFactory.cs" />
+    <Compile Include="EditorFactory.cs" />
     <Compile Include="ExcalidrawWindowPane.cs" />
     <Compile Include="GlobalUsings.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
-    <Compile Include="ExcalidrawInVisualStudioPackage.cs" />
+    <Compile Include="ExcalidrawPackage.cs" />
     <Compile Include="source.extension.cs">
       <AutoGen>True</AutoGen>
       <DesignTime>True</DesignTime>
@@ -77,6 +77,9 @@
     </Content>
     <Content Include="ItemTemplates\EmptyExcalidraw.zip">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+      <IncludeInVSIX>true</IncludeInVSIX>
+    </Content>
+    <Content Include="Monikers.imagemanifest">
       <IncludeInVSIX>true</IncludeInVSIX>
     </Content>
     <None Include="source.extension.vsixmanifest">
@@ -114,7 +117,7 @@
     </PackageReference>
   </ItemGroup>
   <ItemGroup>
-    <Content Include="Resources\ToolWindowCommand.png" />
+    <Resource Include="Resources\excalidraw.png" />
     <Content Include="Templates\EmptyExcalidraw\EmptyExcalidraw.vstemplate" />
     <Content Include="Templates\EmptyExcalidraw\__PreviewImage.png">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>

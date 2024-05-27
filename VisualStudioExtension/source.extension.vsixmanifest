@@ -2,7 +2,7 @@
 <PackageManifest Version="2.0.0" xmlns="http://schemas.microsoft.com/developer/vsx-schema/2011" xmlns:d="http://schemas.microsoft.com/developer/vsx-schema-design/2011">
     <Metadata>
         <Identity Id="10bf6342-1b19-4049-a8bf-6d7b763e4f38" Version="0.1.0" Language="en-US" Publisher="Philip Hendry" />
-        <DisplayName>ExcalidrawInVisualStudio</DisplayName>
+        <DisplayName>Excalidraw</DisplayName>
         <Description xml:space="preserve">An extension for adding Excalidraw diagrams to Visual Studio and edit them.</Description>
         <Icon>Templates\EmptyExcalidraw\__TemplateIcon.png</Icon>
         <PreviewImage>Templates\EmptyExcalidraw\__PreviewImage.png</PreviewImage>
@@ -22,5 +22,6 @@
     <Assets>
         <Asset Type="Microsoft.VisualStudio.VsPackage" d:Source="Project" d:ProjectName="%CurrentProject%" Path="|%CurrentProject%;PkgdefProjectOutputGroup|" />
         <Asset Type="Microsoft.VisualStudio.ItemTemplate" d:Source="File" Path="ItemTemplates" d:TargetPath="ItemTemplates\EmptyExcalidraw.zip" />
+        <Asset Type="Microsoft.VisualStudio.MefComponent" d:Source="Project" d:ProjectName="%CurrentProject%" Path="|%CurrentProject%|" />
     </Assets>
 </PackageManifest>
