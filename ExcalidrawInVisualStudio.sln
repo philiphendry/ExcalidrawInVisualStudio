@@ -5,7 +5,9 @@ VisualStudioVersion = 17.9.34728.123
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{852DE785-36F7-42D6-B576-0F19618DFCD8}"
 	ProjectSection(SolutionItems) = preProject
+		.github\workflows\build.yaml = .github\workflows\build.yaml
 		README.md = README.md
+		vs-publish.json = vs-publish.json
 	EndProjectSection
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ExcalidrawInVisualStudio", "VisualStudioExtension\ExcalidrawInVisualStudio.csproj", "{161C69A8-A4B3-4EFD-9D1D-9C5B24C1A971}"

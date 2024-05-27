@@ -1,0 +1,12 @@
+{
+    "$schema": "http://json.schemastore.org/vsix-publish",
+    "categories": [ "other" ],
+    "identity": {
+        "internalName": "ExcalidrawEditor",
+        "tags": [ "excalidraw" ]
+    },
+    "assetFiles": [],
+    "overview": "README.md",
+    "publisher": "PhilipHendry",
+    "repo": "https://github.com/philiphendry/ExcalidrawInVisualStudio"
+}
