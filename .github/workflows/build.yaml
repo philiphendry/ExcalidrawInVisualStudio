@@ -18,8 +18,8 @@ jobs:
     env:
       Configuration: Release
       DeployExtension: False
-      VsixManifestPath: \VisualStudioExtension\source.extension.vsixmanifest
-      VsixManifestSourcePath: \VisualStudioExtension\source.extension.cs
+      VsixManifestPath: source.extension.vsixmanifest
+      VsixManifestSourcePath: source.extension.cs
       
     steps:
     - uses: actions/checkout@v2

@@ -1,14 +1,16 @@
-﻿using System.IO;
-using System.Runtime.InteropServices;
-using Microsoft.Web.WebView2.Core;
-using Microsoft.Web.WebView2.Wpf;
-using System.Reflection;
-using Debugger = System.Diagnostics.Debugger;
-using System.Diagnostics;
-using Microsoft.VisualStudio.Threading;
+﻿using System.Diagnostics;
 using System.Globalization;
+using System.IO;
+using System.Reflection;
+using System.Runtime.InteropServices;
 using System.Text.Json;
 using System.Windows.Forms;
+using Microsoft.VisualStudio.Threading;
+using Microsoft.Web.WebView2.Core;
+using Microsoft.Web.WebView2.Wpf;
+using Debugger = System.Diagnostics.Debugger;
+
+namespace ExcalidrawInVisualStudio;
 
 [Guid("55415F2D-3595-4DA8-87DF-3F9388DAD6C2")]
 public class ExcalidrawWindowPane : WindowPane, IVsPersistDocData, IVsFileChangeEvents, IVsDocDataFileChangeControl
@@ -399,9 +401,9 @@ public class ExcalidrawWindowPane : WindowPane, IVsPersistDocData, IVsFileChange
                 //Receive notifications if either the attributes of the file change or 
                 //if the size of the file changes or if the last modified time of the file changes
                 result = vsFileChangeEx.AdviseFileChange(fileNameToNotify,
-                                                         (uint)(_VSFILECHANGEFLAGS.VSFILECHG_Attr | _VSFILECHANGEFLAGS.VSFILECHG_Size | _VSFILECHANGEFLAGS.VSFILECHG_Time),
-                                                         this,
-                                                         out vsFileChangeCookie);
+                    (uint)(_VSFILECHANGEFLAGS.VSFILECHG_Attr | _VSFILECHANGEFLAGS.VSFILECHG_Size | _VSFILECHANGEFLAGS.VSFILECHG_Time),
+                    this,
+                    out vsFileChangeCookie);
                 if (vsFileChangeCookie == VSConstants.VSCOOKIE_NIL)
                 {
                     return VSConstants.E_FAIL;
