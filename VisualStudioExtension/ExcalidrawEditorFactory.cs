@@ -1,7 +1,4 @@
-﻿using System;
-using System.Runtime.InteropServices;
-using Microsoft.VisualStudio;
-using Microsoft.VisualStudio.Shell.Interop;
+﻿using System.Runtime.InteropServices;
 using IServiceProvider = Microsoft.VisualStudio.OLE.Interop.IServiceProvider;
 
 namespace ExcalidrawInVisualStudio

@@ -1,7 +1,6 @@
-﻿using Microsoft.VisualStudio.Shell;
-using System;
-using System.Runtime.InteropServices;
+﻿using System.Runtime.InteropServices;
 using System.Threading;
+using Community.VisualStudio.Toolkit;
 using Task = System.Threading.Tasks.Task;
 
 namespace ExcalidrawInVisualStudio
@@ -11,6 +10,7 @@ namespace ExcalidrawInVisualStudio
     [Guid(PackageGuids.guidExcalidrawInVisualStudioPackageString)]
     [ProvideLanguageExtension(typeof(ExcalidrawEditorFactory), Constants.FileExtension)]
     [ProvideEditorExtension(typeof(ExcalidrawEditorFactory), Constants.FileExtension, 1000)]
+    [ProvideFileIcon(Constants.FileExtension, "KnownMonikers.FileDialogReport")]
     public sealed class ExcalidrawInVisualStudioPackage : AsyncPackage
     {
         protected override async Task InitializeAsync(CancellationToken cancellationToken, IProgress<ServiceProgressData> progress)

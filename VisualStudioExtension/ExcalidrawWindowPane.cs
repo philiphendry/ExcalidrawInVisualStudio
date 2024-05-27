@@ -1,18 +1,13 @@
-﻿using System;
-using System.IO;
-using Microsoft.VisualStudio.Shell;
+﻿using System.IO;
 using System.Runtime.InteropServices;
 using Microsoft.Web.WebView2.Core;
 using Microsoft.Web.WebView2.Wpf;
 using System.Reflection;
-using System.Threading.Tasks;
-using Microsoft.VisualStudio.Shell.Interop;
 using Debugger = System.Diagnostics.Debugger;
-using Microsoft.VisualStudio;
 using System.Diagnostics;
-using System.Text.Json;
 using Microsoft.VisualStudio.Threading;
 using System.Globalization;
+using System.Text.Json;
 using System.Windows.Forms;
 
 [Guid("55415F2D-3595-4DA8-87DF-3F9388DAD6C2")]
