@@ -18,8 +18,8 @@ jobs:
     env:
       Configuration: Release
       DeployExtension: False
-      VsixManifestPath: src\source.extension.vsixmanifest
-      VsixManifestSourcePath: src\source.extension.cs
+      VsixManifestPath: ExcalidrawInVisualStudio\source.extension.vsixmanifest
+      VsixManifestSourcePath: ExcalidrawInVisualStudio\source.extension.cs
       
     steps:
     - uses: actions/checkout@v2
