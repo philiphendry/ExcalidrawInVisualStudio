@@ -9,6 +9,7 @@
     <BuildOutputFolder>$(MSBuildProjectDirectory)\dist</BuildOutputFolder>
   </PropertyGroup>
   <ItemGroup>
-    <Folder Include="public\" />
+    <None Remove="public\**" />
+    <TypeScriptConfiguration Remove="public\**" />
   </ItemGroup>
 </Project>
