@@ -3,15 +3,13 @@
 <!-- Version: 14.0.50929.2 -->
 <ImageManifest xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns="http://schemas.microsoft.com/VisualStudio/ImageManifestSchema/2014">
   <Symbols>
-    <String Name="Resources" Value="/ExcalidrawInVisualStudio;Component/resources" />
+    <String Name="Resources" Value="ExcalidrawInVisualStudio;Component/resources" />
     <Guid Name="MonikersGuid" Value="{ef43980f-62d6-42ba-9f24-20ea2285663b}" />
     <ID Name="Excalidraw" Value="1" />
   </Symbols>
   <Images>
     <Image Guid="$(MonikersGuid)" ID="$(Excalidraw)">
-      <Source Uri="$(Resources)/excalidraw.png">
-        <Size Value="32" />
-      </Source>
+		<Source Uri="$(Resources)/excalidraw-logo.xaml" />
     </Image>
   </Images>
   <ImageLists />
