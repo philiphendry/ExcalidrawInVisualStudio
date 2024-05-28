@@ -8,7 +8,7 @@
     <Description>A blank Excalidraw drawing.</Description>
     <Icon>__TemplateIcon.png</Icon>
     <PreviewImage>__PreviewImage.png</PreviewImage>
-	<ProjectType>CSharp</ProjectType>
+	<ProjectType>General</ProjectType>
 	<TemplateGroupID>General</TemplateGroupID>
   </TemplateData>
   <TemplateContent>
