@@ -15,22 +15,22 @@ namespace ExcalidrawInVisualStudio;
 [Guid("55415F2D-3595-4DA8-87DF-3F9388DAD6C2")]
 public class ExcalidrawWindowPane : WindowPane, IVsPersistDocData, IVsFileChangeEvents, IVsDocDataFileChangeControl
 {
-    private readonly WebView2 _webView = new WebView2() { HorizontalAlignment = System.Windows.HorizontalAlignment.Stretch };
+    private readonly WebView2 _webView = new() { HorizontalAlignment = System.Windows.HorizontalAlignment.Stretch };
     private string _filename;
     private bool _isDisposed;
     private bool _isDirty;
     private IVsUIShell _uiShell;
 
     // Counter of the file system changes to ignore.
-    private int changesToIgnore;
-    private IVsFileChangeEx vsFileChangeEx;
-    private Timer reloadTimer = new Timer();
-    private bool fileChangedTimerSet;
+    private int _changesToIgnore;
+    private IVsFileChangeEx _vsFileChangeEx;
+    private Timer _reloadTimer = new();
+    private bool _fileChangedTimerSet;
 
     // Cookie for the subscription to the file system notification events.
-    private uint vsFileChangeCookie;
+    private uint _vsFileChangeCookie;
 
-    private readonly TaskCompletionSource<bool> _webViewInitialisedTaskSource = new TaskCompletionSource<bool>(false);
+    private readonly TaskCompletionSource<bool> _webViewInitialisedTaskSource = new(false);
 
     public ExcalidrawWindowPane() : base(null)
     {
@@ -47,7 +47,7 @@ public class ExcalidrawWindowPane : WindowPane, IVsPersistDocData, IVsFileChange
         ThreadHelper.JoinableTaskFactory.RunAsync(async () =>
         {
             var tempDir = Path.Combine(Path.GetTempPath(), Assembly.GetExecutingAssembly().GetName().Name);
-            var webView2Environment = await CoreWebView2Environment.CreateAsync(null, tempDir, null);
+            var webView2Environment = await CoreWebView2Environment.CreateAsync(null, tempDir);
             await _webView.EnsureCoreWebView2Async(webView2Environment);
 
             _webView.CoreWebView2.WebMessageReceived += CoreWebView2_WebMessageReceived;
@@ -273,7 +273,7 @@ public class ExcalidrawWindowPane : WindowPane, IVsPersistDocData, IVsFileChange
             return VSConstants.E_INVALIDARG;
 
         //ignore file changes if we are in that mode
-        if (changesToIgnore != 0)
+        if (_changesToIgnore != 0)
             return VSConstants.S_OK;
 
         for (uint i = 0; i < numberOfChanges; i++)
@@ -293,13 +293,13 @@ public class ExcalidrawWindowPane : WindowPane, IVsPersistDocData, IVsFileChange
             // this is why we use a timer to delay prompting the user.
             if (0 != (typesOfChanges[i] & (int)(_VSFILECHANGEFLAGS.VSFILECHG_Time | _VSFILECHANGEFLAGS.VSFILECHG_Size)))
             {
-                if (!fileChangedTimerSet)
+                if (!_fileChangedTimerSet)
                 {
-                    reloadTimer = new Timer();
-                    fileChangedTimerSet = true;
-                    reloadTimer.Interval = 1000;
-                    reloadTimer.Tick += OnFileChangeEvent;
-                    reloadTimer.Enabled = true;
+                    _reloadTimer = new Timer();
+                    _fileChangedTimerSet = true;
+                    _reloadTimer.Interval = 1000;
+                    _reloadTimer.Tick += OnFileChangeEvent;
+                    _reloadTimer.Enabled = true;
                 }
             }
         }
@@ -325,13 +325,13 @@ public class ExcalidrawWindowPane : WindowPane, IVsPersistDocData, IVsFileChange
         if (0 != ignoreFlag)
         {
             // The changes must be ignored, so increase the counter of changes to ignore
-            ++changesToIgnore;
+            ++_changesToIgnore;
         }
         else
         {
-            if (changesToIgnore > 0)
+            if (_changesToIgnore > 0)
             {
-                --changesToIgnore;
+                --_changesToIgnore;
             }
         }
 
@@ -341,7 +341,7 @@ public class ExcalidrawWindowPane : WindowPane, IVsPersistDocData, IVsFileChange
     #endregion
 
     /// <summary>
-    /// This event is triggered when one of the files loaded into the environment has changed outside of the
+    /// This event is triggered when one of the files loaded into the environment has changed outside the
     /// codeWindowHost
     /// </summary>
     /// <param name="sender"></param>
@@ -349,7 +349,7 @@ public class ExcalidrawWindowPane : WindowPane, IVsPersistDocData, IVsFileChange
     private void OnFileChangeEvent(object sender, EventArgs e)
     {
         ThreadHelper.ThrowIfNotOnUIThread();
-        reloadTimer.Enabled = false;
+        _reloadTimer.Enabled = false;
         var message = _filename + Environment.NewLine + Environment.NewLine + "This file has changed outside the editor. Do you wish to reload it?";
         var title = string.Empty;
         var result = 0;
@@ -369,58 +369,47 @@ public class ExcalidrawWindowPane : WindowPane, IVsPersistDocData, IVsFileChange
         {
             ((IVsPersistDocData)this).ReloadDocData(0);
         }
-        fileChangedTimerSet = false;
+        _fileChangedTimerSet = false;
     }
 
     /// <summary>
     /// In this function we inform the shell when we wish to receive 
-    /// events when our file is changed or we inform the shell when 
+    /// events when our file is changed, or we inform the shell when 
     /// we wish not to receive events anymore.
     /// </summary>
     /// <param name="fileNameToNotify">File name string</param>
-    /// <param name="startNotify">TRUE indicates advise, FALSE indicates unadvise.</param>
+    /// <param name="startNotify">TRUE indicates advise, FALSE indicates unadvised.</param>
     /// <returns>Result of the operation</returns>
-    private int SetFileChangeNotification(string fileNameToNotify, bool startNotify)
+    private void SetFileChangeNotification(string fileNameToNotify, bool startNotify)
     {
         ThreadHelper.ThrowIfNotOnUIThread();
         Trace.WriteLine(string.Format(CultureInfo.CurrentCulture, "\t **** Inside SetFileChangeNotification ****"));
 
-        int result = VSConstants.E_FAIL;
-
         //Get the File Change service
-        if (null == vsFileChangeEx)
-            vsFileChangeEx = (IVsFileChangeEx)GetService(typeof(SVsFileChangeEx));
-        if (null == vsFileChangeEx)
-            return VSConstants.E_UNEXPECTED;
+        _vsFileChangeEx ??= (IVsFileChangeEx)GetService(typeof(SVsFileChangeEx));
+        if (null == _vsFileChangeEx) return;
 
         // Setup Notification if startNotify is TRUE, Remove if startNotify is FALSE.
         if (startNotify)
         {
-            if (vsFileChangeCookie == VSConstants.VSCOOKIE_NIL)
+            if (_vsFileChangeCookie == VSConstants.VSCOOKIE_NIL)
             {
                 //Receive notifications if either the attributes of the file change or 
                 //if the size of the file changes or if the last modified time of the file changes
-                result = vsFileChangeEx.AdviseFileChange(fileNameToNotify,
+                _vsFileChangeEx.AdviseFileChange(fileNameToNotify,
                     (uint)(_VSFILECHANGEFLAGS.VSFILECHG_Attr | _VSFILECHANGEFLAGS.VSFILECHG_Size | _VSFILECHANGEFLAGS.VSFILECHG_Time),
                     this,
-                    out vsFileChangeCookie);
-                if (vsFileChangeCookie == VSConstants.VSCOOKIE_NIL)
-                {
-                    return VSConstants.E_FAIL;
-                }
+                    out _vsFileChangeCookie);
             }
-            result = VSConstants.S_OK;
         }
         else
         {
-            if (vsFileChangeCookie != VSConstants.VSCOOKIE_NIL)
+            if (_vsFileChangeCookie != VSConstants.VSCOOKIE_NIL)
             {
-                //if we want to unadvise and the cookieTextViewEvents isnt null then unadvise changes
-                result = vsFileChangeEx.UnadviseFileChange(vsFileChangeCookie);
-                vsFileChangeCookie = VSConstants.VSCOOKIE_NIL;
-                result = VSConstants.S_OK;
+                // If we want to unadvise and the cookieTextViewEvents isn't null then unadvise changes
+                _vsFileChangeEx.UnadviseFileChange(_vsFileChangeCookie);
+                _vsFileChangeCookie = VSConstants.VSCOOKIE_NIL;
             }
         }
-        return result;
     }
 }
