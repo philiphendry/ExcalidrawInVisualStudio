@@ -1,0 +1,22 @@
+﻿<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003" DefaultTargets="WebContentBuild">
+
+	<ItemGroup>
+		<SourceFiles Include="$(MSBuildThisFileDirectory)..\..\ExcalidrawHost\src\**\*.*" />
+		<TargetFiles Include="$(MSBuildThisFileDirectory)..\Editor\**\*.*" />
+		<BuildSentinal Include="$(MSBuildThisFileDirectory)..\Editor\index.html" />
+	</ItemGroup>
+
+	<Target Name="WebContentClean" BeforeTargets="CoreClean">
+		<Message Importance="High" Text="Cleaning Excalidraw files: @(TargetFiles)" />
+		<Delete Files="@(TargetFiles)" />
+	</Target>
+	
+	<Target Name="WebContentBuild" Inputs="@(SourceFiles)" Outputs="@(BuildSentinal)" BeforeTargets="BeforeBuild">
+		<Message Importance="High" Text="Publishing Excalidraw files: @(SourceFiles)" />
+		<Exec Command="npm --prefix $(MSBuildThisFileDirectory)..\..\ExcalidrawHost\ run publish" />
+		<Touch Files="@(BuildSentinal)" AlwaysCreate="true" />
+	</Target>
+
+	<Target Name="WebContentRebuild" DependsOnTargets="Clean;Build" BeforeTargets="BeforeRebuild"/>
+
+</Project>

@@ -89,6 +89,8 @@
       <Link>Resources\LICENSE</Link>
       <IncludeInVSIX>true</IncludeInVSIX>
     </Content>
+    <None Include="Build\WebContent.targets" />
+    <None Include="Build\ItemTemplate.targets" />
     <None Include="source.extension.vsixmanifest">
       <SubType>Designer</SubType>
       <Generator>VsixManifestGenerator</Generator>
@@ -132,21 +134,10 @@
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <Import Project="$(VSToolsPath)\VSSDK\Microsoft.VsSDK.targets" Condition="'$(VSToolsPath)' != ''" />
+  <Import Project=".\Build\ItemTemplate.targets" />
+  <Import Project=".\Build\WebContent.targets" />
   <Target Name="BeforeBuild">
-    <CallTarget Targets="Zip" />
   </Target>
   <Target Name="AfterBuild">
-  </Target>
-  <ItemGroup>
-    <TemplateFiles Include="Templates\EmptyExcalidraw\**\*.*">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-      <IncludeInVSIX>true</IncludeInVSIX>
-    </TemplateFiles>
-  </ItemGroup>
-  <Target Name="Clean">
-    <Delete Files="Templates\EmptyExcalidraw.zip" />
-  </Target>
-  <Target Name="Zip" Inputs="@(TemplateFiles)" Outputs="Templates\EmptyExcalidraw.zip">
-    <Exec Command="powershell -NoProfile -Command &quot;Compress-Archive -Path Templates\EmptyExcalidraw\* -DestinationPath Templates\EmptyExcalidraw.zip -Force&quot;" />
   </Target>
 </Project>

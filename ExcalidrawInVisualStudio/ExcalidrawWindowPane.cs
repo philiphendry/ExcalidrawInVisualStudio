@@ -15,6 +15,11 @@ namespace ExcalidrawInVisualStudio;
 [Guid("55415F2D-3595-4DA8-87DF-3F9388DAD6C2")]
 public class ExcalidrawWindowPane : WindowPane, IVsPersistDocData, IVsFileChangeEvents, IVsDocDataFileChangeControl
 {
+    // I'm making this timeout long because Visual Studio can be quite busy loading a large project and if it's
+    // re-loading an excalidraw file we may be hanging around for a while. We're not blocking the Visual Studio
+    // thread so waiting for a while is fine.
+    private const int WaitForWebViewTimeOutInSeconds = 30;
+
     private readonly WebView2 _webView = new() { HorizontalAlignment = System.Windows.HorizontalAlignment.Stretch };
     private string _filename;
     private bool _isDisposed;
@@ -85,7 +90,7 @@ public class ExcalidrawWindowPane : WindowPane, IVsPersistDocData, IVsFileChange
         }
         catch (Exception exception)
         {
-            Trace.WriteLine($"Error in CoreWebView2_WebMessageReceived: {exception}");
+            Trace.WriteLine($"Excalidraw: Error in CoreWebView2_WebMessageReceived: {exception}");
         }
     }
 
@@ -99,7 +104,7 @@ public class ExcalidrawWindowPane : WindowPane, IVsPersistDocData, IVsFileChange
             SetFileChangeNotification(_filename, false);
 
             // Wait for the WebView to be initialised
-            await _webViewInitialisedTaskSource.Task.WithTimeout(TimeSpan.FromSeconds(2));
+            await _webViewInitialisedTaskSource.Task.WithTimeout(TimeSpan.FromSeconds(WaitForWebViewTimeOutInSeconds));
 
             var sceneData = File.ReadAllText(_filename);
             await _webView.ExecuteScriptAsync($"window.interop.loadScene({sceneData})");
@@ -267,8 +272,6 @@ public class ExcalidrawWindowPane : WindowPane, IVsPersistDocData, IVsFileChange
 
     public int FilesChanged(uint numberOfChanges, string[] filesChanged, uint[] typesOfChanges)
     {
-        Trace.WriteLine(string.Format(CultureInfo.CurrentCulture, "\t**** Inside FilesChanged ****"));
-
         if (0 == numberOfChanges || null == filesChanged || null == typesOfChanges)
             return VSConstants.E_INVALIDARG;
 
@@ -383,7 +386,6 @@ public class ExcalidrawWindowPane : WindowPane, IVsPersistDocData, IVsFileChange
     private void SetFileChangeNotification(string fileNameToNotify, bool startNotify)
     {
         ThreadHelper.ThrowIfNotOnUIThread();
-        Trace.WriteLine(string.Format(CultureInfo.CurrentCulture, "\t **** Inside SetFileChangeNotification ****"));
 
         //Get the File Change service
         _vsFileChangeEx ??= (IVsFileChangeEx)GetService(typeof(SVsFileChangeEx));
