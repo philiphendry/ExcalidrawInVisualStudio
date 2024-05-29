@@ -1,0 +1,20 @@
+﻿<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003" DefaultTargets="ItemTemplateBuild">
+
+	<ItemGroup>
+		<SourceFiles Include="$(MSBuildThisFileDirectory)..\Templates\EmptyExcalidraw\**\*.*" />
+		<TargetFile Include="$(MSBuildThisFileDirectory)..\Templates\EmptyExcalidraw.zip" />
+	</ItemGroup>
+
+	<Target Name="ItemTemplateClean" BeforeTargets="CoreClean">
+		<Message Importance="High" Text="Cleaning ItemTemplate: @(TargetFile)" />
+		<Delete Files="@(TargetFile)" />
+	</Target>
+
+	<Target Name="ItemTemplateBuild" Inputs="@(SourceFiles)" Outputs="@(TargetFile)" BeforeTargets="BeforeBuild">
+		<Message Importance="High" Text="Building ItemTemplate from: @(SourceFiles)" />
+		<Exec Command="powershell -NoProfile -Command &quot;Compress-Archive -Path $(MSBuildThisFileDirectory)..\Templates\EmptyExcalidraw\* -DestinationPath @(TargetFile) -Force&quot;" />
+	</Target>
+
+	<Target Name="ItemTemplateRebuild" DependsOnTargets="Clean;Build"  BeforeTargets="BeforeRebuild" />
+
+</Project>
