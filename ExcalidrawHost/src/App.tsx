@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { Excalidraw } from '@excalidraw/excalidraw';
 import { BinaryFileData, ExcalidrawImperativeAPI, UIOptions } from '@excalidraw/excalidraw/types/types';
-import { ExcalidrawElement } from '@excalidraw/excalidraw/types/element/types';
+import { ExcalidrawElement, Theme } from '@excalidraw/excalidraw/types/element/types';
 
 let excalidrawApi: ExcalidrawImperativeAPI | null = null;
 let currentVersionSum: number = 0;
@@ -62,7 +62,15 @@ function calculateElementVersionSum(elements: readonly ExcalidrawElement[]): num
             },
             files
         };
-    }    
+    },
+    setTheme: function (theme: Theme) {
+        // Update the theme prop on Excalidraw
+        excalidrawApi!.updateScene({
+            appState: {
+                theme: theme
+            }
+        });
+    }
 } as Interop;
 
 if ((window as any).chrome.webview === undefined) {
@@ -100,6 +108,8 @@ function App() {
         }, 100);
     }
 
+    const theme = document.getElementById("root")?.getAttribute('data-theme');
+
     return (
         <div style={{ width: '100vw', height: '100vh' }}>
             <Excalidraw
@@ -107,6 +117,7 @@ function App() {
                     excalidrawApi = api;
                     (window as any).chrome.webview.postMessage({ event: 'onReady' });
                 }}
+                theme={theme as Theme}
                 UIOptions={uiOptions}
                 onChange={ handleOnChangeEvent }
                 />

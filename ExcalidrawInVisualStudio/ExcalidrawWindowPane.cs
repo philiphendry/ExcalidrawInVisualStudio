@@ -1,10 +1,12 @@
 ﻿using System.Diagnostics;
+using System.Drawing;
 using System.Globalization;
 using System.IO;
 using System.Reflection;
 using System.Runtime.InteropServices;
 using System.Text.Json;
 using System.Windows.Forms;
+using Microsoft.VisualStudio.PlatformUI;
 using Microsoft.VisualStudio.Threading;
 using Microsoft.Web.WebView2.Core;
 using Microsoft.Web.WebView2.Wpf;
@@ -57,7 +59,7 @@ public class ExcalidrawWindowPane : WindowPane, IVsPersistDocData, IVsFileChange
 
             _webView.CoreWebView2.WebMessageReceived += CoreWebView2_WebMessageReceived;
             _webView.CoreWebView2.SetVirtualHostNameToFolderMapping("excalidraw-editor-host", Path.Combine(GetFolder(), "editor"), CoreWebView2HostResourceAccessKind.Allow);
-
+            
             if (Debugger.IsAttached)
             {
                 _webView.CoreWebView2.OpenDevToolsWindow();
@@ -66,7 +68,23 @@ public class ExcalidrawWindowPane : WindowPane, IVsPersistDocData, IVsFileChange
             var indexHtmlPath = Path.Combine(GetFolder(), "editor", "index.html");
             var indexHtmlContent = File.ReadAllText(indexHtmlPath);
             indexHtmlContent = indexHtmlContent.Replace("<!--replace-with-web-view-base-url-->", "<base href=\"http://excalidraw-editor-host/\" />");
+
+            VSColorTheme.ThemeChanged += VSColorTheme_ThemeChanged;
+            indexHtmlContent = indexHtmlContent.Replace("replace-with-theme", GetTheme());
+
             _webView.NavigateToString(indexHtmlContent);
+        }).FileAndForget("excalidraw");
+    }
+
+    private bool IsColorLight(Color clr) => 5 * clr.G + 2 * clr.R + clr.B > 8 * 128;
+
+    private string GetTheme() => IsColorLight(VSColorTheme.GetThemedColor(EnvironmentColors.ToolWindowBackgroundColorKey)) ? "light" : "dark";
+
+    private void VSColorTheme_ThemeChanged(ThemeChangedEventArgs e)
+    {
+        ThreadHelper.JoinableTaskFactory.RunAsync(async () =>
+        {
+            await _webView.ExecuteScriptAsync($"window.interop.setTheme(\"{GetTheme()}\")");
         }).FileAndForget("excalidraw");
     }
 
@@ -131,6 +149,7 @@ public class ExcalidrawWindowPane : WindowPane, IVsPersistDocData, IVsFileChange
             return;
         }
         _webView.CoreWebView2.WebMessageReceived -= CoreWebView2_WebMessageReceived;
+        VSColorTheme.ThemeChanged -= VSColorTheme_ThemeChanged;
         _webView.Dispose();
         _isDisposed = true;
     }

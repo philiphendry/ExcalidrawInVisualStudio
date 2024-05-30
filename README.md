@@ -13,6 +13,6 @@ but all from the comfort of Visual Studio.
 
 * Edit `.excalidraw` files in the [Excalidraw editor](https://docs.excalidraw.com) in a Visual Studio tool window.
 * Uses an offline version of Excalidraw.
-* Todo: Support light/dark theme.
+* Support light/dark theme.
 * Todo: Support libraries.
 
