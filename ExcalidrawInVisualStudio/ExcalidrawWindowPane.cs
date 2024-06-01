@@ -1,11 +1,15 @@
-﻿using System.Diagnostics;
+﻿using System.Collections.Generic;
+using System.Diagnostics;
 using System.Drawing;
 using System.Globalization;
 using System.IO;
+using System.Linq;
 using System.Reflection;
 using System.Runtime.InteropServices;
 using System.Text.Json;
 using System.Windows.Forms;
+using System.Windows.Input;
+using EnvDTE;
 using Microsoft.VisualStudio.PlatformUI;
 using Microsoft.VisualStudio.Threading;
 using Microsoft.Web.WebView2.Core;
@@ -15,7 +19,11 @@ using Debugger = System.Diagnostics.Debugger;
 namespace ExcalidrawInVisualStudio;
 
 [Guid("55415F2D-3595-4DA8-87DF-3F9388DAD6C2")]
-public class ExcalidrawWindowPane : WindowPane, IVsPersistDocData, IVsFileChangeEvents, IVsDocDataFileChangeControl
+public class ExcalidrawWindowPane : 
+    WindowPane,
+    IVsPersistDocData,
+    IVsFileChangeEvents,
+    IVsDocDataFileChangeControl
 {
     // I'm making this timeout long because Visual Studio can be quite busy loading a large project and if it's
     // re-loading an excalidraw file we may be hanging around for a while. We're not blocking the Visual Studio
@@ -39,6 +47,8 @@ public class ExcalidrawWindowPane : WindowPane, IVsPersistDocData, IVsFileChange
 
     private readonly TaskCompletionSource<bool> _webViewInitialisedTaskSource = new(false);
 
+    private readonly Dictionary<string, string> _commandMappings = new();
+
     public ExcalidrawWindowPane() : base(null)
     {
         base.Initialize();
@@ -49,6 +59,9 @@ public class ExcalidrawWindowPane : WindowPane, IVsPersistDocData, IVsFileChange
     {
         ThreadHelper.ThrowIfNotOnUIThread();
         _uiShell = (IVsUIShell)GetService(typeof(SVsUIShell));
+       
+        CreateCommandBinding("File.SaveSelectedItems");
+        CreateCommandBinding("File.SaveAll");        
 
         _webView.Initialized -= WebView_Initialized;
         ThreadHelper.JoinableTaskFactory.RunAsync(async () =>
@@ -57,6 +70,7 @@ public class ExcalidrawWindowPane : WindowPane, IVsPersistDocData, IVsFileChange
             var webView2Environment = await CoreWebView2Environment.CreateAsync(null, tempDir);
             await _webView.EnsureCoreWebView2Async(webView2Environment);
 
+            _webView.KeyDown += WebView_KeyDown; 
             _webView.CoreWebView2.WebMessageReceived += CoreWebView2_WebMessageReceived;
             _webView.CoreWebView2.SetVirtualHostNameToFolderMapping("excalidraw-editor-host", Path.Combine(GetFolder(), "editor"), CoreWebView2HostResourceAccessKind.Allow);
             
@@ -77,6 +91,59 @@ public class ExcalidrawWindowPane : WindowPane, IVsPersistDocData, IVsFileChange
 
             _webView.NavigateToString(indexHtmlContent);
         }).FileAndForget("excalidraw");
+    }
+
+    private void CreateCommandBinding(string commandName)
+    {
+        var dte = (DTE)GetService(typeof(DTE));
+        if (dte is null)
+        {
+            return;
+        }
+
+        if (dte.Commands.Item(commandName).Bindings is not object[] bindings || bindings.Length <= 0)
+        {
+            return;
+        }
+
+        var binding = bindings.FirstOrDefault() as string;
+        if (binding is null)
+        {
+            return;
+        }
+
+        var scopeIndex = binding.IndexOf("::");
+        if (scopeIndex > 0)
+        {
+            binding = binding.Substring(scopeIndex + 2);
+        }
+        _commandMappings.Add(binding, commandName);
+    }
+
+    private void WebView_KeyDown(object sender, System.Windows.Input.KeyEventArgs e)
+    {
+        ThreadHelper.ThrowIfNotOnUIThread();
+
+        var binding = string.Empty;
+        if ((Keyboard.Modifiers & ModifierKeys.Control) == ModifierKeys.Control)
+        {
+            binding += "Ctrl+";
+        }
+        if ((Keyboard.Modifiers & ModifierKeys.Shift) == ModifierKeys.Shift)
+        {
+            binding += "Shift+";
+        }
+        if ((Keyboard.Modifiers & ModifierKeys.Alt) == ModifierKeys.Alt)
+        {
+            binding += "Alt+";
+        }
+        binding += e.Key.ToString();
+
+        if (_commandMappings.TryGetValue(binding, out string commandName))
+        {
+            var dte = (DTE)GetService(typeof(DTE));
+            dte.ExecuteCommand(commandName);
+        }
     }
 
     private static string GetMarketplaceUrl() => $"https://www.vsixgallery.com/extension/{Vsix.Id}";
@@ -199,7 +266,7 @@ public class ExcalidrawWindowPane : WindowPane, IVsPersistDocData, IVsFileChange
 
     public int GetGuidEditorType(out Guid pClassID)
     {
-        pClassID = new Guid("51C27119-216E-4656-BD87-DF82198AB01F");
+        pClassID = PackageGuids.EditorFactory;
         return VSConstants.S_OK;
     }
 
