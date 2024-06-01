@@ -14,5 +14,5 @@ but all from the comfort of Visual Studio.
 * Edit `.excalidraw` files in the [Excalidraw editor](https://docs.excalidraw.com) in a Visual Studio tool window.
 * Uses an offline version of Excalidraw.
 * Support light/dark theme.
-* Todo: Support libraries.
+* Support libraries allowing you to add to the library and have it persist between sessions.
 

@@ -67,7 +67,10 @@ public class ExcalidrawWindowPane : WindowPane, IVsPersistDocData, IVsFileChange
 
             var indexHtmlPath = Path.Combine(GetFolder(), "editor", "index.html");
             var indexHtmlContent = File.ReadAllText(indexHtmlPath);
-            indexHtmlContent = indexHtmlContent.Replace("<!--replace-with-web-view-base-url-->", "<base href=\"http://excalidraw-editor-host/\" />");
+            indexHtmlContent = indexHtmlContent
+                .Replace("<!--replace-with-web-view-base-url-->", "<base href=\"http://excalidraw-editor-host/\" />")
+                .Replace("replace-with-export-source", GetMarketplaceUrl());
+            
 
             VSColorTheme.ThemeChanged += VSColorTheme_ThemeChanged;
             indexHtmlContent = indexHtmlContent.Replace("replace-with-theme", GetTheme());
@@ -75,6 +78,8 @@ public class ExcalidrawWindowPane : WindowPane, IVsPersistDocData, IVsFileChange
             _webView.NavigateToString(indexHtmlContent);
         }).FileAndForget("excalidraw");
     }
+
+    private static string GetMarketplaceUrl() => $"https://www.vsixgallery.com/extension/{Vsix.Id}";
 
     private bool IsColorLight(Color clr) => 5 * clr.G + 2 * clr.R + clr.B > 8 * 128;
 
@@ -104,12 +109,48 @@ public class ExcalidrawWindowPane : WindowPane, IVsPersistDocData, IVsFileChange
             {
                 // Set the TaskCompletionSource to true to indicate the WebView has been initialised
                 _webViewInitialisedTaskSource.SetResult(true);
+                ThreadHelper.JoinableTaskFactory.RunAsync(async () =>
+                {
+                    var libraryPath = GetLibraryPath();
+                    if (File.Exists(libraryPath))
+                    {
+                        var libraryItemsJson = File.ReadAllText(libraryPath);
+                        var libraryItems = JsonDocument.Parse(libraryItemsJson).RootElement.GetProperty("libraryItems").GetRawText();
+                        await _webView.ExecuteScriptAsync($"window.interop.loadLibrary({libraryItems})");
+                    }
+                }).FileAndForget("excalidraw");
+
+            }
+            else if (eventType == "onLibraryChange")
+            {
+                var libraryItems = root.GetProperty("libraryItems").GetRawText();
+                var libraryPath = GetLibraryPath();
+                var libraryFolderPath = Path.GetDirectoryName(libraryPath);
+                if (!Directory.Exists(libraryFolderPath))
+                {
+                    Directory.CreateDirectory(libraryFolderPath!);
+                }
+                File.WriteAllText(libraryPath, $$"""
+                    {
+                        "type": "excalidrawlib",
+                        "version": 2,
+                        "source": "{{GetMarketplaceUrl()}}",
+                        "libraryItems": {{libraryItems}}
+                    }
+                    """);
             }
         }
         catch (Exception exception)
         {
             Trace.WriteLine($"Excalidraw: Error in CoreWebView2_WebMessageReceived: {exception}");
         }
+    }
+
+    private static string GetLibraryPath()
+    {
+        var libraryPath = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData);
+        libraryPath = Path.Combine(libraryPath, "Excalidraw", "library.excalidrawlib");
+        return libraryPath;
     }
 
     private void LoadScene()

@@ -1,10 +1,12 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { Excalidraw } from '@excalidraw/excalidraw';
-import { BinaryFileData, ExcalidrawImperativeAPI, UIOptions } from '@excalidraw/excalidraw/types/types';
+import { BinaryFileData, ExcalidrawImperativeAPI, LibraryItems, UIOptions } from '@excalidraw/excalidraw/types/types';
 import { ExcalidrawElement, Theme } from '@excalidraw/excalidraw/types/element/types';
 
 let excalidrawApi: ExcalidrawImperativeAPI | null = null;
 let currentVersionSum: number = 0;
+let isLibraryLoading: boolean = false;
+let libraryItemsRef: LibraryItems = [];
 
 interface Interop {
     loadScene: (data: any) => void;
@@ -22,6 +24,10 @@ function calculateElementVersionSum(elements: readonly ExcalidrawElement[]): num
         excalidrawApi!.updateScene(sceneData);
         const filesArray: BinaryFileData[] = Object.values(sceneData.files);
         excalidrawApi!.addFiles(filesArray);
+    },
+    loadLibrary: function (libraryItems: LibraryItems): void {        
+        isLibraryLoading = true;
+        excalidrawApi!.updateLibrary({ libraryItems });
     },
     getScene: function () {
         const elements = excalidrawApi!.getSceneElements();
@@ -108,6 +114,18 @@ function App() {
         }, 100);
     }
 
+    function handleOnLibraryChange(libraryItems: LibraryItems) {
+        if (JSON.stringify(libraryItemsRef) === JSON.stringify(libraryItems)) {
+            return;
+        }
+        libraryItemsRef = libraryItems;
+        if (isLibraryLoading) {
+            isLibraryLoading = false;
+            return;
+        }
+        (window as any).chrome.webview.postMessage({ event: 'onLibraryChange', libraryItems: libraryItems });
+    }
+
     const theme = document.getElementById("root")?.getAttribute('data-theme');
 
     return (
@@ -119,7 +137,8 @@ function App() {
                 }}
                 theme={theme as Theme}
                 UIOptions={uiOptions}
-                onChange={ handleOnChangeEvent }
+                onChange={handleOnChangeEvent}
+                onLibraryChange={handleOnLibraryChange}
                 />
         </div>
     )
