@@ -363,5 +363,3 @@ FodyWeavers.xsd
 
 # Local project ignores
 /ExcalidrawInVisualStudio/Templates/EmptyExcalidraw.zip
-/ExcalidrawInVisualStudio/Editor/index.html
-/ExcalidrawInVisualStudio/Editor/assets/*.*
