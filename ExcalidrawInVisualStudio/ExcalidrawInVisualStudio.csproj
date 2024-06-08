@@ -50,7 +50,10 @@
     <Compile Include="Constants.cs" />
     <Compile Include="EditorFactory.cs" />
     <Compile Include="ExcalidrawWindowPane.cs" />
+    <Compile Include="ExtensionConfiguration.cs" />
     <Compile Include="GlobalUsings.cs" />
+    <Compile Include="KeyPressEventArgs.cs" />
+    <Compile Include="LibraryChangeEventArgs.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="ExcalidrawPackage.cs" />
     <Compile Include="source.extension.cs">
@@ -63,6 +66,7 @@
       <DesignTime>True</DesignTime>
       <DependentUpon>VSCommandTable.vsct</DependentUpon>
     </Compile>
+    <Compile Include="WebViewManager.cs" />
   </ItemGroup>
   <ItemGroup>
     <VSCTCompile Include="VSCommandTable.vsct">
