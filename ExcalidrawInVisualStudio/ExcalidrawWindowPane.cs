@@ -1,25 +1,19 @@
 ﻿using System.Collections.Generic;
-using System.Diagnostics;
-using System.Drawing;
 using System.Globalization;
 using System.IO;
 using System.Linq;
-using System.Reflection;
 using System.Runtime.InteropServices;
 using System.Text.Json;
 using System.Windows.Forms;
-using System.Windows.Input;
 using EnvDTE;
 using Microsoft.VisualStudio.PlatformUI;
 using Microsoft.VisualStudio.Threading;
-using Microsoft.Web.WebView2.Core;
-using Microsoft.Web.WebView2.Wpf;
 using Debugger = System.Diagnostics.Debugger;
 
 namespace ExcalidrawInVisualStudio;
 
 [Guid("55415F2D-3595-4DA8-87DF-3F9388DAD6C2")]
-public class ExcalidrawWindowPane : 
+public class ExcalidrawWindowPane :
     WindowPane,
     IVsPersistDocData,
     IVsFileChangeEvents,
@@ -30,11 +24,12 @@ public class ExcalidrawWindowPane :
     // thread so waiting for a while is fine.
     private const int WaitForWebViewTimeOutInSeconds = 30;
 
-    private readonly WebView2 _webView = new() { HorizontalAlignment = System.Windows.HorizontalAlignment.Stretch };
+    /// <summary>This TaskCompletionSource is used to wait for the WebView to be initialised before loading the scene.</summary>
+    private readonly TaskCompletionSource<bool> _webViewInitialisedTaskSource = new(false);
+
     private string _filename;
     private bool _isDisposed;
     private bool _isDirty;
-    private IVsUIShell _uiShell;
 
     // Counter of the file system changes to ignore.
     private int _changesToIgnore;
@@ -45,56 +40,90 @@ public class ExcalidrawWindowPane :
     // Cookie for the subscription to the file system notification events.
     private uint _vsFileChangeCookie;
 
-    private readonly TaskCompletionSource<bool> _webViewInitialisedTaskSource = new(false);
-
     private readonly Dictionary<string, string> _commandMappings = new();
+
+    private readonly ExtensionConfiguration _extensionConfiguration = new();
+    private WebViewManager _webViewManager = new();
 
     public ExcalidrawWindowPane() : base(null)
     {
         base.Initialize();
-        _webView.Initialized += WebView_Initialized;        
+
+        ThreadHelper.ThrowIfNotOnUIThread();
+
+        VSColorTheme.ThemeChanged += VSColorTheme_ThemeChanged;
+
+        _webViewManager.OnDirty += (_, _) => { _isDirty = true; };
+
+        _webViewManager.OnReady += (_, _) =>
+        {
+            CreateCommandBinding("File.SaveSelectedItems");
+            CreateCommandBinding("File.SaveAll");
+
+            _webViewInitialisedTaskSource.SetResult(true);
+            ThreadHelper.JoinableTaskFactory.RunAsync(async () =>
+            {
+                var libraryPath = _extensionConfiguration.GetLibraryPath();
+                if (File.Exists(libraryPath))
+                {
+                    var libraryItemsJson = File.ReadAllText(libraryPath);
+                    var libraryItems = JsonDocument.Parse(libraryItemsJson).RootElement.GetProperty("libraryItems").GetRawText();
+                    await _webViewManager.LoadLibraryAsync(libraryItems);
+                }
+            }).FileAndForget("excalidraw");
+        };
+
+        _webViewManager.OnLibraryChange += (_, args) =>
+        {
+            var libraryPath = _extensionConfiguration.GetLibraryPath();
+            var libraryFolderPath = Path.GetDirectoryName(libraryPath);
+            if (!Directory.Exists(libraryFolderPath))
+            {
+                Directory.CreateDirectory(libraryFolderPath!);
+            }
+            File.WriteAllText(libraryPath,
+                $$"""
+                {
+                    "type": "excalidrawlib",
+                    "version": 2,
+                    "source": "{{Constants.MarketplaceUrl}}",
+                    "libraryItems": {{args.LibraryItems}}
+                }
+                """);
+        };
+
+        _webViewManager.OnKeyPress += (_, args) =>
+        {
+            ThreadHelper.ThrowIfNotOnUIThread();
+            if (_commandMappings.TryGetValue(args.KeyPress, out string commandName))
+            {
+                var dte = (DTE)GetService(typeof(DTE));
+                dte.ExecuteCommand(commandName);
+            }
+        };
     }
 
-    private void WebView_Initialized(object sender, EventArgs e)
+    protected override void Initialize()
     {
-        ThreadHelper.ThrowIfNotOnUIThread();
-        _uiShell = (IVsUIShell)GetService(typeof(SVsUIShell));
-       
-        CreateCommandBinding("File.SaveSelectedItems");
-        CreateCommandBinding("File.SaveAll");        
+        Content = _webViewManager.Content;
+    }
 
-        _webView.Initialized -= WebView_Initialized;
-        ThreadHelper.JoinableTaskFactory.RunAsync(async () =>
+    protected override void Dispose(bool disposing)
+    {
+        if (_isDisposed)
         {
-            var tempDir = Path.Combine(Path.GetTempPath(), Assembly.GetExecutingAssembly().GetName().Name);
-            var webView2Environment = await CoreWebView2Environment.CreateAsync(null, tempDir);
-            await _webView.EnsureCoreWebView2Async(webView2Environment);
+            return;
+        }
 
-            _webView.KeyDown += WebView_KeyDown; 
-            _webView.CoreWebView2.WebMessageReceived += CoreWebView2_WebMessageReceived;
-            _webView.CoreWebView2.SetVirtualHostNameToFolderMapping("excalidraw-editor-host", Path.Combine(GetFolder(), "editor"), CoreWebView2HostResourceAccessKind.Allow);
-            
-            if (Debugger.IsAttached)
-            {
-                _webView.CoreWebView2.OpenDevToolsWindow();
-            }
-
-            var indexHtmlPath = Path.Combine(GetFolder(), "editor", "index.html");
-            var indexHtmlContent = File.ReadAllText(indexHtmlPath);
-            indexHtmlContent = indexHtmlContent
-                .Replace("<!--replace-with-web-view-base-url-->", "<base href=\"http://excalidraw-editor-host/\" />")
-                .Replace("replace-with-export-source", GetMarketplaceUrl());
-            
-
-            VSColorTheme.ThemeChanged += VSColorTheme_ThemeChanged;
-            indexHtmlContent = indexHtmlContent.Replace("replace-with-theme", GetTheme());
-
-            _webView.NavigateToString(indexHtmlContent);
-        }).FileAndForget("excalidraw");
+        VSColorTheme.ThemeChanged -= VSColorTheme_ThemeChanged;
+        _webViewManager.Dispose();
+        _webViewManager = null;
+        _isDisposed = true;
     }
 
     private void CreateCommandBinding(string commandName)
     {
+        ThreadHelper.ThrowIfNotOnUIThread();
         var dte = (DTE)GetService(typeof(DTE));
         if (dte is null)
         {
@@ -112,7 +141,7 @@ public class ExcalidrawWindowPane :
             return;
         }
 
-        var scopeIndex = binding.IndexOf("::");
+        var scopeIndex = binding.IndexOf("::", StringComparison.Ordinal);
         if (scopeIndex > 0)
         {
             binding = binding.Substring(scopeIndex + 2);
@@ -120,104 +149,9 @@ public class ExcalidrawWindowPane :
         _commandMappings.Add(binding, commandName);
     }
 
-    private void WebView_KeyDown(object sender, System.Windows.Input.KeyEventArgs e)
-    {
-        ThreadHelper.ThrowIfNotOnUIThread();
-
-        var binding = string.Empty;
-        if ((Keyboard.Modifiers & ModifierKeys.Control) == ModifierKeys.Control)
-        {
-            binding += "Ctrl+";
-        }
-        if ((Keyboard.Modifiers & ModifierKeys.Shift) == ModifierKeys.Shift)
-        {
-            binding += "Shift+";
-        }
-        if ((Keyboard.Modifiers & ModifierKeys.Alt) == ModifierKeys.Alt)
-        {
-            binding += "Alt+";
-        }
-        binding += e.Key.ToString();
-
-        if (_commandMappings.TryGetValue(binding, out string commandName))
-        {
-            var dte = (DTE)GetService(typeof(DTE));
-            dte.ExecuteCommand(commandName);
-        }
-    }
-
-    private static string GetMarketplaceUrl() => $"https://www.vsixgallery.com/extension/{Vsix.Id}";
-
-    private bool IsColorLight(Color clr) => 5 * clr.G + 2 * clr.R + clr.B > 8 * 128;
-
-    private string GetTheme() => IsColorLight(VSColorTheme.GetThemedColor(EnvironmentColors.ToolWindowBackgroundColorKey)) ? "light" : "dark";
-
     private void VSColorTheme_ThemeChanged(ThemeChangedEventArgs e)
     {
-        ThreadHelper.JoinableTaskFactory.RunAsync(async () =>
-        {
-            await _webView.ExecuteScriptAsync($"window.interop.setTheme(\"{GetTheme()}\")");
-        }).FileAndForget("excalidraw");
-    }
-
-    private void CoreWebView2_WebMessageReceived(object sender, CoreWebView2WebMessageReceivedEventArgs e)
-    {
-        try
-        {
-            var json = e.WebMessageAsJson;
-            var document = JsonDocument.Parse(json);
-            var root = document.RootElement;
-            var eventType = root.GetProperty("event").GetString();
-            if (eventType == "onChange")
-            {
-                _isDirty = true;
-            }
-            else if (eventType == "onReady")
-            {
-                // Set the TaskCompletionSource to true to indicate the WebView has been initialised
-                _webViewInitialisedTaskSource.SetResult(true);
-                ThreadHelper.JoinableTaskFactory.RunAsync(async () =>
-                {
-                    var libraryPath = GetLibraryPath();
-                    if (File.Exists(libraryPath))
-                    {
-                        var libraryItemsJson = File.ReadAllText(libraryPath);
-                        var libraryItems = JsonDocument.Parse(libraryItemsJson).RootElement.GetProperty("libraryItems").GetRawText();
-                        await _webView.ExecuteScriptAsync($"window.interop.loadLibrary({libraryItems})");
-                    }
-                }).FileAndForget("excalidraw");
-
-            }
-            else if (eventType == "onLibraryChange")
-            {
-                var libraryItems = root.GetProperty("libraryItems").GetRawText();
-                var libraryPath = GetLibraryPath();
-                var libraryFolderPath = Path.GetDirectoryName(libraryPath);
-                if (!Directory.Exists(libraryFolderPath))
-                {
-                    Directory.CreateDirectory(libraryFolderPath!);
-                }
-                File.WriteAllText(libraryPath, $$"""
-                    {
-                        "type": "excalidrawlib",
-                        "version": 2,
-                        "source": "{{GetMarketplaceUrl()}}",
-                        "libraryItems": {{libraryItems}}
-                    }
-                    """);
-            }
-        }
-        catch (Exception exception)
-        {
-            Trace.WriteLine($"Excalidraw: Error in CoreWebView2_WebMessageReceived: {exception}");
-        }
-    }
-
-    private static string GetLibraryPath()
-    {
-        var libraryPath = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData);
-        libraryPath = Path.Combine(libraryPath, "Excalidraw", "library.excalidrawlib");
-        return libraryPath;
+        ThreadHelper.JoinableTaskFactory.RunAsync(_webViewManager.ThemeChangedAsync).FileAndForget("excalidraw");
     }
 
     private void LoadScene()
@@ -229,44 +163,21 @@ public class ExcalidrawWindowPane :
         {
             SetFileChangeNotification(_filename, false);
 
-            // Wait for the WebView to be initialised
             await _webViewInitialisedTaskSource.Task.WithTimeout(TimeSpan.FromSeconds(WaitForWebViewTimeOutInSeconds));
 
             var sceneData = File.ReadAllText(_filename);
-            await _webView.ExecuteScriptAsync($"window.interop.loadScene({sceneData})");
+            await _webViewManager.LoadSceneAsync(sceneData);
 
             SetFileChangeNotification(_filename, true);
 
         }).FileAndForget("excalidraw");
     }
 
-    public static string GetFolder()
-    {
-        var assembly = Assembly.GetExecutingAssembly().Location;
-        return Path.GetDirectoryName(assembly);
-    }
-
-    protected override void Initialize()
-    {
-        Content = _webView;
-    }
-    protected override void Dispose(bool disposing)
-    {
-        if (_isDisposed)
-        {
-            return;
-        }
-        _webView.CoreWebView2.WebMessageReceived -= CoreWebView2_WebMessageReceived;
-        VSColorTheme.ThemeChanged -= VSColorTheme_ThemeChanged;
-        _webView.Dispose();
-        _isDisposed = true;
-    }
-
     #region IVsPersistDocData
 
-    public int GetGuidEditorType(out Guid pClassID)
+    public int GetGuidEditorType(out Guid pClassId)
     {
-        pClassID = PackageGuids.EditorFactory;
+        pClassId = PackageGuids.EditorFactory;
         return VSConstants.S_OK;
     }
 
@@ -307,7 +218,7 @@ public class ExcalidrawWindowPane :
                 case VSSAVEFLAGS.VSSAVE_SilentSave:
                     ThreadHelper.JoinableTaskFactory.RunAsync(async () =>
                     {
-                        var sceneData = await _webView.ExecuteScriptAsync("window.interop.getScene()");
+                        var sceneData = await _webViewManager.GetSceneAsync();
                         File.WriteAllText(_filename, sceneData);
 
                         SetFileChangeNotification(_filename, true);
@@ -346,9 +257,7 @@ public class ExcalidrawWindowPane :
     public int Close()
     {
         ThreadHelper.ThrowIfNotOnUIThread();
-
         SetFileChangeNotification(_filename, false);
-
         return VSConstants.S_OK;
     }
 
@@ -399,10 +308,10 @@ public class ExcalidrawWindowPane :
 
     public int FilesChanged(uint numberOfChanges, string[] filesChanged, uint[] typesOfChanges)
     {
-        if (0 == numberOfChanges || null == filesChanged || null == typesOfChanges)
+        if (numberOfChanges == 0 || filesChanged == null || typesOfChanges == null)
             return VSConstants.E_INVALIDARG;
 
-        //ignore file changes if we are in that mode
+        // Ignore file changes if we are in that mode
         if (_changesToIgnore != 0)
             return VSConstants.S_OK;
 
@@ -413,25 +322,30 @@ public class ExcalidrawWindowPane :
             {
                 continue;
             }
+
             // if it looks like the file contents have changed (either the size or the modified
             // time has changed) then we need to prompt the user to see if we should reload the
             // file. it is important to not synchronously reload the file inside of this FilesChanged
-            // notification. first it is possible that there will be more than one FilesChanged 
+            // notification. first it is possible that there will be more than one FilesChanged
             // notification being sent (sometimes you get separate notifications for file attribute
             // changing and file size/time changing). also it is the preferred UI style to not
             // prompt the user until the user re-activates the environment application window.
             // this is why we use a timer to delay prompting the user.
-            if (0 != (typesOfChanges[i] & (int)(_VSFILECHANGEFLAGS.VSFILECHG_Time | _VSFILECHANGEFLAGS.VSFILECHG_Size)))
+            if ((typesOfChanges[i] & (int)(_VSFILECHANGEFLAGS.VSFILECHG_Time | _VSFILECHANGEFLAGS.VSFILECHG_Size)) ==0)
             {
-                if (!_fileChangedTimerSet)
-                {
-                    _reloadTimer = new Timer();
-                    _fileChangedTimerSet = true;
-                    _reloadTimer.Interval = 1000;
-                    _reloadTimer.Tick += OnFileChangeEvent;
-                    _reloadTimer.Enabled = true;
-                }
+                continue;
             }
+
+            if (_fileChangedTimerSet)
+            {
+                continue;
+            }
+
+            _reloadTimer = new Timer();
+            _fileChangedTimerSet = true;
+            _reloadTimer.Interval = 1000;
+            _reloadTimer.Tick += OnFileChangeEvent;
+            _reloadTimer.Enabled = true;
         }
 
         return VSConstants.S_OK;
@@ -455,13 +369,13 @@ public class ExcalidrawWindowPane :
         if (0 != ignoreFlag)
         {
             // The changes must be ignored, so increase the counter of changes to ignore
-            ++_changesToIgnore;
+            _changesToIgnore++;
         }
         else
         {
             if (_changesToIgnore > 0)
             {
-                --_changesToIgnore;
+                _changesToIgnore--;
             }
         }
 
@@ -484,7 +398,8 @@ public class ExcalidrawWindowPane :
         var title = string.Empty;
         var result = 0;
         var tempGuid = Guid.Empty;
-        _uiShell?.ShowMessageBox(0,
+        var uiShell = (IVsUIShell)GetService(typeof(SVsUIShell));
+        uiShell?.ShowMessageBox(0,
             ref tempGuid,
             title,
             message,
@@ -503,8 +418,8 @@ public class ExcalidrawWindowPane :
     }
 
     /// <summary>
-    /// In this function we inform the shell when we wish to receive 
-    /// events when our file is changed, or we inform the shell when 
+    /// In this function we inform the shell when we wish to receive
+    /// events when our file is changed, or we inform the shell when
     /// we wish not to receive events anymore.
     /// </summary>
     /// <param name="fileNameToNotify">File name string</param>
@@ -514,7 +429,7 @@ public class ExcalidrawWindowPane :
     {
         ThreadHelper.ThrowIfNotOnUIThread();
 
-        //Get the File Change service
+        // Get the File Change service
         _vsFileChangeEx ??= (IVsFileChangeEx)GetService(typeof(SVsFileChangeEx));
         if (null == _vsFileChangeEx) return;
 
@@ -523,7 +438,7 @@ public class ExcalidrawWindowPane :
         {
             if (_vsFileChangeCookie == VSConstants.VSCOOKIE_NIL)
             {
-                //Receive notifications if either the attributes of the file change or 
+                //Receive notifications if either the attributes of the file change or
                 //if the size of the file changes or if the last modified time of the file changes
                 _vsFileChangeEx.AdviseFileChange(fileNameToNotify,
                     (uint)(_VSFILECHANGEFLAGS.VSFILECHG_Attr | _VSFILECHANGEFLAGS.VSFILECHG_Size | _VSFILECHANGEFLAGS.VSFILECHG_Time),

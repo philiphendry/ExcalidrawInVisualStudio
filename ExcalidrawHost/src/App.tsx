@@ -10,7 +10,9 @@ let libraryItemsRef: LibraryItems = [];
 
 interface Interop {
     loadScene: (data: any) => void;
+    loadLibrary: (libraryItems: LibraryItems) => void;
     getScene: () => any;
+    setTheme: (theme: Theme) => void;
 }
 
 function calculateElementVersionSum(elements: readonly ExcalidrawElement[]): number {
@@ -69,7 +71,7 @@ function calculateElementVersionSum(elements: readonly ExcalidrawElement[]): num
             files
         };
     },
-    setTheme: function (theme: Theme) {
+    setTheme: function (theme: Theme) : void {
         // Update the theme prop on Excalidraw
         excalidrawApi!.updateScene({
             appState: {
