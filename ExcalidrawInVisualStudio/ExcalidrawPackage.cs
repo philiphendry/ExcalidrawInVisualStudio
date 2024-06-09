@@ -10,13 +10,11 @@ namespace ExcalidrawInVisualStudio
     [InstalledProductRegistration(Vsix.Name, Vsix.Description, Vsix.Version)]
     [Guid(PackageGuids.ExcalidrawEditorString)]
 
-    [ProvideLanguageExtension(typeof(EditorFactory), Constants.FileExtension)]
-    [ProvideLanguageExtension(typeof(EditorFactory), Constants.FileExtensionEmbeddedImage)]
-
     [ProvideEditorFactory(typeof(EditorFactory), 100)]
     [ProvideEditorLogicalView(typeof(EditorFactory), VSConstants.LOGVIEWID.ProjectSpecificEditor_string, IsTrusted = true)]
     [ProvideEditorExtension(typeof(EditorFactory), Constants.FileExtension, 50)]
     [ProvideEditorExtension(typeof(EditorFactory), Constants.FileExtensionEmbeddedImage, 50)]
+    [ProvideEditorExtension(typeof(EditorFactory), ".png", 1)]
 
     [ProvideFileIcon(Constants.FileExtension, "ef43980f-62d6-42ba-9f24-20ea2285663b:1")]
     [ProvideBindingPath]
