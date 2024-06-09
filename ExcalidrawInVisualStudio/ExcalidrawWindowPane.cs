@@ -172,12 +172,11 @@ public class ExcalidrawWindowPane :
 
     private void LoadScene()
     {
+        SetFileChangeNotification(_filename, false);
         _isDirty = false;
 
         ThreadHelper.JoinableTaskFactory.RunAsync(async () =>
         {
-            SetFileChangeNotification(_filename, false);
-
             await _webViewInitialisedTaskSource.Task.WithTimeout(TimeSpan.FromSeconds(WaitForWebViewTimeOutInSeconds));
 
             if (_filename.EndsWith(Constants.FileExtensionEmbeddedImage, StringComparison.OrdinalIgnoreCase))
