@@ -10,13 +10,6 @@ let libraryItemsRef: LibraryItems = [];
 
 const theme = document.getElementById("root")?.getAttribute('data-theme');
 
-interface Interop {
-    loadSceneAsync: (sceneData: Uint8Array, contentType: string) => Promise<void>;
-    loadLibrary: (libraryItems: LibraryItems) => void;
-    saveSceneAsync: (contentType: string) => Promise<void>;
-    setTheme: (theme: Theme) => void;
-}
-
 function calculateElementVersionSum(elements: readonly ExcalidrawElement[]): number {
     return elements.reduce((acc: number, e: ExcalidrawElement) => acc + e.version, 0);
 }
@@ -118,7 +111,7 @@ function calculateElementVersionSum(elements: readonly ExcalidrawElement[]): num
             }
         });
     }
-} as Interop;
+};
 
 if ((window as any).chrome.webview === undefined) {
     (window as any).chrome.webview = {
