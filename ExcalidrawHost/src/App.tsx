@@ -1,5 +1,5 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import { Excalidraw } from '@excalidraw/excalidraw';
+import { Excalidraw, exportToBlob, loadFromBlob } from '@excalidraw/excalidraw';
 import { BinaryFileData, ExcalidrawImperativeAPI, LibraryItems, UIOptions } from '@excalidraw/excalidraw/types/types';
 import { ExcalidrawElement, Theme } from '@excalidraw/excalidraw/types/element/types';
 
@@ -8,10 +8,12 @@ let currentVersionSum: number = 0;
 let isLibraryLoading: boolean = false;
 let libraryItemsRef: LibraryItems = [];
 
+const theme = document.getElementById("root")?.getAttribute('data-theme');
+
 interface Interop {
-    loadScene: (data: any) => void;
+    loadSceneAsync: (sceneData: Uint8Array, contentType: string) => Promise<void>;
     loadLibrary: (libraryItems: LibraryItems) => void;
-    getScene: () => any;
+    saveSceneAsync: (contentType: string) => Promise<void>;
     setTheme: (theme: Theme) => void;
 }
 
@@ -20,56 +22,93 @@ function calculateElementVersionSum(elements: readonly ExcalidrawElement[]): num
 }
 
 (window as any).interop = {
-    loadScene: function (sceneData: any): void {
+    loadSceneAsync: async function (sceneData: any, contentType: string): Promise<void> {
+        let scene: any;
+        if (contentType == 'image/png') {
+            const sceneBlob = new Blob([new Uint8Array(sceneData)], { type: 'image/png' });
+            scene = await loadFromBlob(sceneBlob, null, null);
+        } else if (contentType == 'application/json') {
+            scene = sceneData;
+        }
+
+        scene.appState.theme = theme;
+
         // Update the current version sum so we don't raise onChange event back to the host.
-        currentVersionSum = calculateElementVersionSum(sceneData.elements);
-        excalidrawApi!.updateScene(sceneData);
-        const filesArray: BinaryFileData[] = Object.values(sceneData.files);
+        currentVersionSum = calculateElementVersionSum(scene.elements);
+        excalidrawApi!.updateScene(scene);
+        const filesArray: BinaryFileData[] = Object.values(scene.files);
         excalidrawApi!.addFiles(filesArray);
     },
-    loadLibrary: function (libraryItems: LibraryItems): void {        
+    loadLibrary: function (libraryItems: LibraryItems): void {
         isLibraryLoading = true;
         excalidrawApi!.updateLibrary({ libraryItems });
     },
-    getScene: function () {
+    saveSceneAsync: async function (contentType: string): Promise<void> {
         const elements = excalidrawApi!.getSceneElements();
-        const appState = excalidrawApi!.getAppState();
+        const appStateCurrent = excalidrawApi!.getAppState();
+        const appState = {
+            currentItemStrokeColor: appStateCurrent.currentItemStrokeColor,
+            currentItemBackgroundColor: appStateCurrent.currentItemBackgroundColor,
+            currentItemFillStyle: appStateCurrent.currentItemFillStyle,
+            currentItemStrokeWidth: appStateCurrent.currentItemStrokeWidth,
+            currentItemStrokeStyle: appStateCurrent.currentItemStrokeStyle,
+            currentItemRoughness: appStateCurrent.currentItemRoughness,
+            currentItemOpacity: appStateCurrent.currentItemOpacity,
+            currentItemFontFamily: appStateCurrent.currentItemFontFamily,
+            currentItemFontSize: appStateCurrent.currentItemFontSize,
+            currentItemTextAlign: appStateCurrent.currentItemTextAlign,
+            currentItemStartArrowhead: appStateCurrent.currentItemStartArrowhead,
+            currentItemEndArrowhead: appStateCurrent.currentItemEndArrowhead,
+            scrollX: appStateCurrent.scrollX,
+            scrollY: appStateCurrent.scrollY,
+            zoom: appStateCurrent.zoom,
+            currentItemRoundness: appStateCurrent.currentItemRoundness,
+            gridSize: appStateCurrent.gridSize,
+            frameRendering: appStateCurrent.frameRendering,
+            objectsSnapModeEnabled: appStateCurrent.objectsSnapModeEnabled,
+        };
         const files = { ...excalidrawApi!.getFiles() };
+
         if (files) {
             const imageIds = elements.filter((e : any) => e.type === "image").map((e : any) => e.fileId);
             const toDelete = Object.keys(files).filter((k) => !imageIds.includes(k));
             toDelete.forEach((k) => delete files[k]);
         }
-        return {
-            type: "excalidraw",
-            version: 2,
-            source: "https://philiphendry.me.uk/excalidrawinvisualstudio",
-            elements,
-            appState: {
-                theme: appState.theme,
-                viewBackgroundColor: appState.viewBackgroundColor,
-                currentItemStrokeColor: appState.currentItemStrokeColor,
-                currentItemBackgroundColor: appState.currentItemBackgroundColor,
-                currentItemFillStyle: appState.currentItemFillStyle,
-                currentItemStrokeWidth: appState.currentItemStrokeWidth,
-                currentItemStrokeStyle: appState.currentItemStrokeStyle,
-                currentItemRoughness: appState.currentItemRoughness,
-                currentItemOpacity: appState.currentItemOpacity,
-                currentItemFontFamily: appState.currentItemFontFamily,
-                currentItemFontSize: appState.currentItemFontSize,
-                currentItemTextAlign: appState.currentItemTextAlign,
-                currentItemStartArrowhead: appState.currentItemStartArrowhead,
-                currentItemEndArrowhead: appState.currentItemEndArrowhead,
-                scrollX: appState.scrollX,
-                scrollY: appState.scrollY,
-                zoom: appState.zoom,
-                currentItemRoundness: appState.currentItemRoundness,
-                gridSize: appState.gridSize,
-                frameRendering: appState.frameRendering,
-                objectsSnapModeEnabled: appState.objectsSnapModeEnabled,
-            },
-            files
-        };
+
+        if (contentType == 'image/png') {
+            const blob = await exportToBlob({
+                elements,
+                appState: {
+                    ...appState,
+                    exportBackground: true,
+                    exportEmbedScene: true
+                },
+                files
+            });
+            const blobArray = Array.from(new Uint8Array(await blob.arrayBuffer()));
+            const message = {
+                event: 'onSceneSave',
+                contentType,
+                data: blobArray
+            };
+            (window as any).chrome.webview.postMessage(message);
+
+        } else if (contentType == 'application/json') {
+            const sceneData = {
+                type: "excalidraw",
+                version: 2,
+                source: "https://philiphendry.me.uk/excalidrawinvisualstudio",
+                elements,
+                appState,
+                files
+            };
+            const message = {
+                event: 'onSceneSave',
+                contentType,
+                data: Array.from(new TextEncoder().encode(JSON.stringify(sceneData)))
+            };
+            (window as any).chrome.webview.postMessage(message);
+        }
     },
     setTheme: function (theme: Theme) : void {
         // Update the theme prop on Excalidraw
@@ -127,8 +166,6 @@ function App() {
         }
         (window as any).chrome.webview.postMessage({ event: 'onLibraryChange', libraryItems: libraryItems });
     }
-
-    const theme = document.getElementById("root")?.getAttribute('data-theme');
 
     return (
         <div style={{ width: '100vw', height: '100vh' }}>

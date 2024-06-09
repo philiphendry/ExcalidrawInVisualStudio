@@ -11,10 +11,12 @@ namespace ExcalidrawInVisualStudio
     [Guid(PackageGuids.ExcalidrawEditorString)]
 
     [ProvideLanguageExtension(typeof(EditorFactory), Constants.FileExtension)]
+    [ProvideLanguageExtension(typeof(EditorFactory), Constants.FileExtensionEmbeddedImage)]
 
-    [ProvideEditorFactory(typeof(EditorFactory), 214, false, CommonPhysicalViewAttributes = (int)__VSPHYSICALVIEWATTRIBUTES.PVA_SupportsPreview, TrustLevel = __VSEDITORTRUSTLEVEL.ETL_AlwaysTrusted)]
+    [ProvideEditorFactory(typeof(EditorFactory), 100)]
     [ProvideEditorLogicalView(typeof(EditorFactory), VSConstants.LOGVIEWID.ProjectSpecificEditor_string, IsTrusted = true)]
-    [ProvideEditorExtension(typeof(EditorFactory), Constants.FileExtension, 65536, NameResourceID = 214)]
+    [ProvideEditorExtension(typeof(EditorFactory), Constants.FileExtension, 50)]
+    [ProvideEditorExtension(typeof(EditorFactory), Constants.FileExtensionEmbeddedImage, 50)]
 
     [ProvideFileIcon(Constants.FileExtension, "ef43980f-62d6-42ba-9f24-20ea2285663b:1")]
     [ProvideBindingPath]

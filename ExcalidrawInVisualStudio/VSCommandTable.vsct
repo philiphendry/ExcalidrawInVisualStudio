@@ -10,7 +10,6 @@
 	</Commands>
 
 	<Symbols>
-		<GuidSymbol name="EditorFactory" value="{abcd570c-4efd-4029-9deb-13a2dc2cef7a}" />
-		<GuidSymbol name="ExcalidrawEditor" value="{abcd570c-4efd-4029-9deb-13a2dc2cef7a}" />		
+		<GuidSymbol name="ExcalidrawEditor" value="{abcd570c-4efd-4029-9deb-13a2dc2cef7a}" />
 	</Symbols>
 </CommandTable>
