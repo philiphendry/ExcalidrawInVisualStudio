@@ -3,6 +3,7 @@ using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Runtime.InteropServices;
+using System.Text;
 using System.Text.Json;
 using System.Windows.Forms;
 using EnvDTE;
@@ -101,6 +102,21 @@ public class ExcalidrawWindowPane :
                 dte.ExecuteCommand(commandName);
             }
         };
+
+        _webViewManager.OnSceneSave += (_, args) =>
+        {
+            ThreadHelper.ThrowIfNotOnUIThread();
+            if (args.ContentType.Equals("image/png", StringComparison.OrdinalIgnoreCase))
+            {
+                File.WriteAllBytes(_filename, args.Data);
+            }
+            else
+            {
+                File.WriteAllText(_filename,  Encoding.UTF8.GetString(args.Data));
+            }
+            _isDirty = false;
+            SetFileChangeNotification(_filename, true);
+        };
     }
 
     protected override void Initialize()
@@ -158,15 +174,22 @@ public class ExcalidrawWindowPane :
     {
         _isDirty = false;
 
-        // TODO parse JSON to check it's the correct format
         ThreadHelper.JoinableTaskFactory.RunAsync(async () =>
         {
             SetFileChangeNotification(_filename, false);
 
             await _webViewInitialisedTaskSource.Task.WithTimeout(TimeSpan.FromSeconds(WaitForWebViewTimeOutInSeconds));
 
-            var sceneData = File.ReadAllText(_filename);
-            await _webViewManager.LoadSceneAsync(sceneData);
+            if (_filename.EndsWith(Constants.FileExtensionEmbeddedImage, StringComparison.OrdinalIgnoreCase))
+            {
+                var sceneData = File.ReadAllBytes(_filename);
+                await _webViewManager.LoadScenePngAsync(sceneData);
+            }
+            else
+            {
+                var sceneData = File.ReadAllText(_filename);
+                await _webViewManager.LoadSceneJsonAsync(sceneData);
+            }
 
             SetFileChangeNotification(_filename, true);
 
@@ -177,7 +200,7 @@ public class ExcalidrawWindowPane :
 
     public int GetGuidEditorType(out Guid pClassId)
     {
-        pClassId = PackageGuids.EditorFactory;
+        pClassId = PackageGuids.ExcalidrawEditor;
         return VSConstants.S_OK;
     }
 
@@ -218,10 +241,14 @@ public class ExcalidrawWindowPane :
                 case VSSAVEFLAGS.VSSAVE_SilentSave:
                     ThreadHelper.JoinableTaskFactory.RunAsync(async () =>
                     {
-                        var sceneData = await _webViewManager.GetSceneAsync();
-                        File.WriteAllText(_filename, sceneData);
-
-                        SetFileChangeNotification(_filename, true);
+                        if (_filename.EndsWith(Constants.FileExtensionEmbeddedImage, StringComparison.OrdinalIgnoreCase))
+                        {
+                             await _webViewManager.SaveScenePngAsync();
+                        }
+                        else
+                        {
+                            await _webViewManager.SaveSceneJsonAsync();
+                        }
                     }).FileAndForget("excalidraw");
 
                     break;

@@ -12,9 +12,6 @@ namespace ExcalidrawInVisualStudio
     /// </summary>
     internal sealed partial class PackageGuids
     {
-        public const string EditorFactoryString = "abcd570c-4efd-4029-9deb-13a2dc2cef7a";
-        public static Guid EditorFactory = new Guid(EditorFactoryString);
-
         public const string ExcalidrawEditorString = "abcd570c-4efd-4029-9deb-13a2dc2cef7a";
         public static Guid ExcalidrawEditor = new Guid(ExcalidrawEditorString);
     }

@@ -1,5 +1,6 @@
 ﻿using System.Diagnostics;
 using System.IO;
+using System.Linq;
 using System.Text.Json;
 using System.Windows.Input;
 using Microsoft.Web.WebView2.Core;
@@ -23,6 +24,7 @@ public class WebViewManager : IDisposable
     public EventHandler OnReady;
     public EventHandler<LibraryChangeEventArgs> OnLibraryChange;
     public EventHandler<KeyPressEventArgs> OnKeyPress;
+    public EventHandler<SceneSaveEventArgs> OnSceneSave;
 
     public WebViewManager()
     {
@@ -94,18 +96,22 @@ public class WebViewManager : IDisposable
             var document = JsonDocument.Parse(json);
             var root = document.RootElement;
             var eventType = root.GetProperty("event").GetString();
-            if (eventType == "onChange")
+            switch (eventType)
             {
-                OnDirty?.Invoke(this, EventArgs.Empty);
-            }
-            else if (eventType == "onReady")
-            {
-                OnReady?.Invoke(this, EventArgs.Empty);
-            }
-            else if (eventType == "onLibraryChange")
-            {
-                var libraryItems = root.GetProperty("libraryItems").GetRawText();
-                OnLibraryChange?.Invoke(this, new LibraryChangeEventArgs {  LibraryItems = libraryItems });
+                case "onChange":
+                    OnDirty?.Invoke(this, EventArgs.Empty);
+                    break;
+                case "onReady":
+                    OnReady?.Invoke(this, EventArgs.Empty);
+                    break;
+                case "onLibraryChange":
+                    OnLibraryChange?.Invoke(this, new LibraryChangeEventArgs {  LibraryItems = root.GetProperty("libraryItems").GetRawText() });
+                    break;
+                case "onSceneSave":
+                    var contentType = root.GetProperty("contentType").GetString();
+                    var data = root.GetProperty("data").Deserialize<uint[]>().Select(i => (byte)i).ToArray();
+                    OnSceneSave?.Invoke(this, new SceneSaveEventArgs { Data = data, ContentType = contentType });
+                    break;
             }
         }
         catch (Exception exception)
@@ -114,11 +120,19 @@ public class WebViewManager : IDisposable
         }
     }
 
-    public async Task<string> GetSceneAsync() => await _webView.ExecuteScriptAsync("window.interop.getScene()");
+    /// <summary>
+    /// If WebView2 supported async methods then we could await the return of the saveSceneAsync method. Instead, the call
+    /// to saveSceneAsync will return immediately and the result will be available in the <see cref="OnSceneSave"/> event handler.
+    /// </summary>
+    public async Task SaveSceneJsonAsync() => await _webView.ExecuteScriptAsync($"window.interop.saveSceneAsync('application/json')");
+
+    public async Task SaveScenePngAsync() => await _webView.ExecuteScriptAsync($"window.interop.saveSceneAsync('image/png')");
 
     public async Task LoadLibraryAsync(string libraryItems) => await _webView.ExecuteScriptAsync($"window.interop.loadLibrary({libraryItems})");
 
-    public async Task LoadSceneAsync(string sceneData) => await _webView.ExecuteScriptAsync($"window.interop.loadScene({sceneData})");
+    public async Task LoadSceneJsonAsync(string sceneData) => await _webView.ExecuteScriptAsync($"window.interop.loadSceneAsync({sceneData}, 'application/json')");
+
+    public async Task LoadScenePngAsync(byte[] sceneData) => await _webView.ExecuteScriptAsync($"window.interop.loadSceneAsync({JsonSerializer.Serialize(sceneData.ToList())}, 'image/png')");
 
     public void Dispose()
     {

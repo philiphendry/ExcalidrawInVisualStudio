@@ -5,7 +5,7 @@ using Microsoft.VisualStudio.Package;
 namespace ExcalidrawInVisualStudio
 {
     [ComVisible(true)]
-    [Guid(PackageGuids.EditorFactoryString)]
+    [Guid(PackageGuids.ExcalidrawEditorString)]
     public class EditorFactory : LanguageBase
     {
         public EditorFactory(object site) : base(site)
@@ -32,10 +32,13 @@ namespace ExcalidrawInVisualStudio
 
         public override string Name => Constants.LanguageName;
 
-        public override string[] FileExtensions { get; } = [Constants.FileExtension];
+        public override string[] FileExtensions { get; } = [
+            Constants.FileExtension,
+            Constants.FileExtensionEmbeddedImage
+            ];
 
         public override void SetDefaultPreferences(LanguagePreferences preferences)
-        {            
+        {
         }
     }
 }
