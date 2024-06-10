@@ -1,0 +1,15 @@
+<VSTemplate
+	Version="3.0.0"
+	xmlns="http://schemas.microsoft.com/developer/vstemplate/2005"
+	Type="Item">
+  <TemplateData>
+    <Name>Excalidraw image file</Name>
+    <Description>A blank Excalidraw drawing embedded inside a png for portability.</Description>
+    <Icon>TemplateIcon.png</Icon>
+    <ProjectType>CSharp</ProjectType>
+    <ProvideDefaultName>false</ProvideDefaultName>
+  </TemplateData>
+  <TemplateContent>
+    <ProjectItem>Image.excalidraw.png</ProjectItem>
+  </TemplateContent>
+</VSTemplate>

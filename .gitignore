@@ -362,4 +362,4 @@ MigrationBackup/
 FodyWeavers.xsd
 
 # Local project ignores
-/ExcalidrawInVisualStudio/Templates/EmptyExcalidraw.zip
+/ExcalidrawInVisualStudio/ItemTemplates/*.zip
