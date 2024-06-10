@@ -1,19 +1,20 @@
-﻿<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003" DefaultTargets="ItemTemplateBuild">
-
-	<ItemGroup>
-		<SourceFiles Include="$(MSBuildThisFileDirectory)..\Templates\EmptyExcalidraw\**\*.*" />
-		<TargetFile Include="$(MSBuildThisFileDirectory)..\Templates\EmptyExcalidraw.zip" />
-	</ItemGroup>
+﻿<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003" DefaultTargets="JsonTemplateBuild;ImageTemplateBuild">
 
 	<Target Name="ItemTemplateClean" BeforeTargets="CoreClean">
-		<Message Importance="High" Text="Cleaning ItemTemplate: @(TargetFile)" />
-		<Delete Files="@(TargetFile)" />
+		<Message Importance="High" Text="Cleaning ItemTemplates" />
+		<Delete Files="$(MSBuildThisFileDirectory)..\ItemTemplates\Image.zip" />
+		<Delete Files="$(MSBuildThisFileDirectory)..\ItemTemplates\Json.zip" />
 	</Target>
 
-	<Target Name="ItemTemplateBuild" Inputs="@(SourceFiles)" Outputs="@(TargetFile)" BeforeTargets="BeforeBuild">
-		<Message Importance="High" Text="Building ItemTemplate from: @(SourceFiles)" />
-		<Exec Command="powershell -NoProfile -Command &quot;Compress-Archive -Path $(MSBuildThisFileDirectory)..\Templates\EmptyExcalidraw\* -DestinationPath @(TargetFile) -Force&quot;" />
+	<Target Name="JsonTemplateBuild" Inputs="$(MSBuildThisFileDirectory)..\Templates\Json\**\*.*" Outputs="$(MSBuildThisFileDirectory)..\ItemTemplates\Json.zip" BeforeTargets="BeforeBuild">
+		<Message Importance="High" Text="Building ItemTemplate from: $(MSBuildThisFileDirectory)..\Templates\Json\**\*.*" />
+		<Exec Command="powershell -NoProfile -Command &quot;Compress-Archive -Path $(MSBuildThisFileDirectory)..\Templates\Json\* -DestinationPath $(MSBuildThisFileDirectory)..\ItemTemplates\Json.zip -Force&quot;" />
 	</Target>
+
+  <Target Name="ImageTemplateBuild" Inputs="$(MSBuildThisFileDirectory)..\Templates\Image\**\*.*" Outputs="$(MSBuildThisFileDirectory)..\ItemTemplates\Image.zip" BeforeTargets="BeforeBuild">
+    <Message Importance="High" Text="Building ItemTemplate from: $(MSBuildThisFileDirectory)..\Templates\Image\**\*.*" />
+    <Exec Command="powershell -NoProfile -Command &quot;Compress-Archive -Path $(MSBuildThisFileDirectory)..\Templates\Image\* -DestinationPath $(MSBuildThisFileDirectory)..\ItemTemplates\Image.zip -Force&quot;" />
+  </Target>
 
 	<Target Name="ItemTemplateRebuild" DependsOnTargets="Clean;Build"  BeforeTargets="BeforeRebuild" />
 

@@ -70,6 +70,14 @@
     <Compile Include="WebViewManager.cs" />
   </ItemGroup>
   <ItemGroup>
+    <Content Include="Templates\Image\Image.excalidraw.png" />
+    <VSTemplate Include="Templates\Image\Image.vstemplate" />
+    <Content Include="Templates\Image\__PreviewImage.png" />
+    <Content Include="Templates\Image\__TemplateIcon.png" />
+    <VSTemplate Include="Templates\Json\Json.vstemplate" />
+    <Content Include="Templates\Json\__PreviewImage.png" />
+    <Content Include="Templates\Json\__TemplateIcon.png" />
+    <None Include="Templates\Json\Json.excalidraw" />
     <VSCTCompile Include="VSCommandTable.vsct">
       <ResourceName>Menus.ctmenu</ResourceName>
       <Generator>VsctGenerator</Generator>
@@ -83,10 +91,6 @@
     <Content Include="Editor\**\*">
       <IncludeInVSIX>true</IncludeInVSIX>
     </Content>
-    <Content Include="Templates\EmptyExcalidraw.zip">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-      <IncludeInVSIX>true</IncludeInVSIX>
-    </Content>
     <Content Include="Monikers.imagemanifest">
       <IncludeInVSIX>true</IncludeInVSIX>
     </Content>
@@ -96,6 +100,14 @@
     </Content>
     <None Include="Build\WebContent.targets" />
     <None Include="Build\ItemTemplate.targets" />
+    <Content Include="ItemTemplates\Image.zip">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+      <IncludeInVSIX>true</IncludeInVSIX>
+    </Content>
+    <Content Include="ItemTemplates\Json.zip">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+      <IncludeInVSIX>true</IncludeInVSIX>
+    </Content>
     <None Include="source.extension.vsixmanifest">
       <SubType>Designer</SubType>
       <Generator>VsixManifestGenerator</Generator>

@@ -1,27 +1,28 @@
 <?xml version="1.0" encoding="utf-8"?>
 <PackageManifest Version="2.0.0" xmlns="http://schemas.microsoft.com/developer/vsx-schema/2011" xmlns:d="http://schemas.microsoft.com/developer/vsx-schema-design/2011">
-    <Metadata>
-        <Identity Id="10bf6342-1b19-4049-a8bf-6d7b763e4f38" Version="0.1.0" Language="en-US" Publisher="Philip Hendry" />
-        <DisplayName>Excalidraw</DisplayName>
-        <Description xml:space="preserve">Add and edit Excalidraw diagrams inside Visual Studio.</Description>
-        <License>Resources\LICENSE</License>
-        <Icon>Resources\excalidraw-large.png</Icon>
-        <PreviewImage>Resources\excalidraw-large.png</PreviewImage>
-    </Metadata>
-    <Installation>
-        <InstallationTarget Id="Microsoft.VisualStudio.Community" Version="[17.0, 18.0)">
-            <ProductArchitecture>amd64</ProductArchitecture>
-        </InstallationTarget>
-    </Installation>
-    <Dependencies>
-        <Dependency Id="Microsoft.Framework.NDP" DisplayName="Microsoft .NET Framework" d:Source="Manual" Version="[4.5,)" />
-    </Dependencies>
-    <Prerequisites>
-        <Prerequisite Id="Microsoft.VisualStudio.Component.CoreEditor" Version="[17.0,18.0)" DisplayName="Visual Studio core editor" />
-    </Prerequisites>
-    <Assets>
-        <Asset Type="Microsoft.VisualStudio.VsPackage" d:Source="Project" d:ProjectName="%CurrentProject%" Path="|%CurrentProject%;PkgdefProjectOutputGroup|" />
-        <Asset Type="Microsoft.VisualStudio.ItemTemplate" d:Source="File" Path="Templates" d:TargetPath="Templates\EmptyExcalidraw.zip" />
-        <Asset Type="Microsoft.VisualStudio.MefComponent" d:Source="Project" d:ProjectName="%CurrentProject%" Path="|%CurrentProject%|" />
-    </Assets>
+  <Metadata>
+    <Identity Id="10bf6342-1b19-4049-a8bf-6d7b763e4f38" Version="0.1.0" Language="en-US" Publisher="Philip Hendry" />
+    <DisplayName>Excalidraw</DisplayName>
+    <Description xml:space="preserve">Add and edit Excalidraw diagrams inside Visual Studio.</Description>
+    <License>Resources\LICENSE</License>
+    <Icon>Resources\excalidraw-large.png</Icon>
+    <PreviewImage>Resources\excalidraw-large.png</PreviewImage>
+  </Metadata>
+  <Installation>
+    <InstallationTarget Id="Microsoft.VisualStudio.Community" Version="[17.0, 18.0)">
+      <ProductArchitecture>amd64</ProductArchitecture>
+    </InstallationTarget>
+  </Installation>
+  <Dependencies>
+    <Dependency Id="Microsoft.Framework.NDP" DisplayName="Microsoft .NET Framework" d:Source="Manual" Version="[4.5,)" />
+  </Dependencies>
+  <Prerequisites>
+    <Prerequisite Id="Microsoft.VisualStudio.Component.CoreEditor" Version="[17.0,18.0)" DisplayName="Visual Studio core editor" />
+  </Prerequisites>
+  <Assets>
+    <Asset Type="Microsoft.VisualStudio.VsPackage" d:Source="Project" d:ProjectName="%CurrentProject%" Path="|%CurrentProject%;PkgdefProjectOutputGroup|" />
+    <Asset Type="Microsoft.VisualStudio.ItemTemplate" d:Source="File" d:TargetPath="ItemTemplates\Json.zip" Path="ItemTemplates" />
+    <Asset Type="Microsoft.VisualStudio.ItemTemplate" d:Source="File" d:TargetPath="ItemTemplates\Image.zip" Path="ItemTemplates" />
+    <Asset Type="Microsoft.VisualStudio.MefComponent" d:Source="Project" d:ProjectName="%CurrentProject%" Path="|%CurrentProject%|" />
+  </Assets>
 </PackageManifest>

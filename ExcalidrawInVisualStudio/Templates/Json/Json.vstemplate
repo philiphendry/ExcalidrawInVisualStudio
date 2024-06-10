@@ -1,0 +1,17 @@
+<VSTemplate
+	Version="3.0.0"
+	xmlns="http://schemas.microsoft.com/developer/vstemplate/2005"
+	Type="Item">
+  <TemplateData>
+    <TemplateID>{923ef016-f0d4-408d-a228-e434bd56ea3a}</TemplateID>
+    <Name>Excalidraw file</Name>
+    <Description>A blank Excalidraw drawing.</Description>
+    <Icon>__TemplateIcon.png</Icon>
+    <PreviewImage>__PreviewImage.png</PreviewImage>
+    <DefaultName>drawing.excalidraw</DefaultName>
+    <ProjectType>CSharp</ProjectType>
+  </TemplateData>
+  <TemplateContent>
+    <ProjectItem>Json.excalidraw</ProjectItem>
+  </TemplateContent>
+</VSTemplate>
