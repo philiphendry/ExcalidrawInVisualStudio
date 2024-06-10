@@ -3,15 +3,13 @@
 	xmlns="http://schemas.microsoft.com/developer/vstemplate/2005"
 	Type="Item">
   <TemplateData>
-    <TemplateID>{9546afd7-c99f-4849-89b3-813919a8a858}</TemplateID>
     <Name>Excalidraw image file</Name>
     <Description>A blank Excalidraw drawing embedded inside a png for portability.</Description>
-    <Icon>__TemplateIcon.png</Icon>
-    <PreviewImage>__PreviewImage.png</PreviewImage>
-    <DefaultName>drawing.excalidraw.png</DefaultName>
+    <Icon>TemplateIcon.png</Icon>
     <ProjectType>CSharp</ProjectType>
+    <ProvideDefaultName>false</ProvideDefaultName>
   </TemplateData>
   <TemplateContent>
-    <ProjectItem TargetFileName="$fileinputname$.excalidraw.png" ReplaceParameters="true">Image.excalidraw.png</ProjectItem>
+    <ProjectItem>Image.excalidraw.png</ProjectItem>
   </TemplateContent>
 </VSTemplate>
