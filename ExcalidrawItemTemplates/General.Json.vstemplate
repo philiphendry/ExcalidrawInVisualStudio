@@ -6,10 +6,11 @@
     <Name>Excalidraw file</Name>
     <Description>A blank Excalidraw drawing.</Description>
     <Icon>TemplateIcon.png</Icon>
-    <ProjectType>CSharp</ProjectType>
-    <ProvideDefaultName>false</ProvideDefaultName>
+    <ProjectType>General</ProjectType>
+    <TemplateID>4e799127-872f-453c-8ae4-2e6e871966dc</TemplateID>
+    <DefaultName>drawing.excalidraw</DefaultName>
   </TemplateData>
   <TemplateContent>
-    <ProjectItem>Json.excalidraw</ProjectItem>
+    <ProjectItem>template.excalidraw</ProjectItem>
   </TemplateContent>
 </VSTemplate>
