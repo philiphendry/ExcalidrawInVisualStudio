@@ -1,0 +1,23 @@
+﻿<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003" DefaultTargets="CopyCefSharpDependencies">
+
+  <Target Name="CopyCefSharpDependencies" AfterTargets="Build">
+
+    <ItemGroup>
+        <CefSharpFiles Include="$(OutputPath)x64\CefSharp.BrowserSubprocess.exe" />
+        <CefSharpFiles Include="$(OutputPath)x64\CefSharp.BrowserSubprocess.Core.dll" />
+        <CefSharpFiles Include="$(OutputPath)x64\CefSharp.Core.Runtime.dll" />
+        <CefSharpFiles Include="$(OutputPath)x64\CefSharp.Core.dll" />
+        <CefSharpFiles Include="$(OutputPath)x64\CefSharp.dll" />
+        <CefSharpFiles Include="$(OutputPath)x64\CefSharp.Wpf.dll" />
+        <CefSharpFiles Include="$(OutputPath)x64\libcef.dll" />
+        <CefSharpFiles Include="$(OutputPath)x64\chrome_elf.dll" />
+        <CefSharpFiles Include="$(OutputPath)x64\icudtl.dat" />
+        <CefSharpFiles Include="$(OutputPath)x64\snapshot_blob.bin" />
+        <CefSharpFiles Include="$(OutputPath)x64\v8_context_snapshot.bin" />
+    </ItemGroup>
+
+    <!--<Copy SourceFiles="@(CefSharpFiles)" DestinationFolder="$(VsixContentDir)x64\%(RecursiveDir)" SkipUnchangedFiles="true" />-->
+
+  </Target>
+
+</Project>
