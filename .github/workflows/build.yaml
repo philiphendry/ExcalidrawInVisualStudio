@@ -50,7 +50,7 @@ jobs:
         vsix-token-source-file: ${{ env.VsixManifestSourcePath }}
 
     - name: Build
-      run: msbuild ExcalidrawInVisualStudio.sln /t:Rebuild /v:m -restore /p:OutDir=\_built
+      run: msbuild ExcalidrawInVisualStudio.sln /t:Rebuild /v:d -restore /p:OutDir=\_built
 
     #- name: Setup test
     #  uses: darenm/Setup-VSTest@v1
