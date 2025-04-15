@@ -8,7 +8,9 @@
     "build": "tsc && vite build",
     "clean": "rimraf dist && rimraf ../ExcalidrawInVisualStudio/Editor/",
     "copy": "ncp dist ../ExcalidrawInVisualStudio/Editor/",
-    "publish": "npm run clean && npm run build && npm run copy",
+    "touch-csproj": "powershell.exe -Command \"(Get-Item ../ExcalidrawInVisualStudio/ExcalidrawInVisualStudio.csproj).LastWriteTime = Get-Date\"",
+    "update-csproj-content": "powershell.exe .\\update-csproj-content.ps1",
+    "publish": "npm run clean && npm run build && npm run copy && npm run update-csproj-content && npm run touch-csproj",
     "lint": "eslint . --ext ts,tsx --report-unused-disable-directives --max-warnings 0",
     "preview": "vite preview"
   },

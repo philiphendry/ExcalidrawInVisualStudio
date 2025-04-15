@@ -79,10 +79,11 @@
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
       <IncludeInVSIX>true</IncludeInVSIX>
     </Content>
-    <Content Include="Resources\excalidraw-logo.svg" />
-    <Content Include="Editor\**\*.*">
+    <Content Include="Resources\excalidraw-logo.svg">
       <IncludeInVSIX>true</IncludeInVSIX>
     </Content>
+    <!-- AUTO-GENERATED-CONTENT-START -->
+  <!-- AUTO-GENERATED-CONTENT-END -->
     <Content Include="Monikers.imagemanifest">
       <IncludeInVSIX>true</IncludeInVSIX>
     </Content>
@@ -155,3 +156,5 @@
   <Target Name="AfterBuild">
   </Target>
 </Project>
+
+
