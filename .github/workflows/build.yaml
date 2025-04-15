@@ -36,6 +36,7 @@ jobs:
       with:
         node-version: '18'
         cache: 'npm'
+        cache-dependency-path: ./excalidrawhost/package-lock.json
 
     - name: Increment VSIX version
       id: vsix_version
