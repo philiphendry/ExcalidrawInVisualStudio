@@ -41,3 +41,4 @@ $updatedContent = $regex.Replace($originalContent, $newBlock)
 Set-Content -Path $csprojPath -Value $updatedContent -Encoding UTF8
 
 Write-Host ".csproj updated with $($files.Count) content item(s)."
+Write-Host $updatedContent
