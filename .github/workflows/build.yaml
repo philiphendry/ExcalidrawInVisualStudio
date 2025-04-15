@@ -38,6 +38,10 @@ jobs:
         cache: 'npm'
         cache-dependency-path: ./excalidrawhost/package-lock.json
 
+    - name: Install Node.js dependencies
+      run: npm install
+      working-directory: ./excalidrawhost
+
     - name: Increment VSIX version
       id: vsix_version
       uses: timheuer/vsix-version-stamp@v1
