@@ -1,14 +1,15 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { Excalidraw, exportToBlob, loadFromBlob } from '@excalidraw/excalidraw';
-import { BinaryFileData, ExcalidrawImperativeAPI, LibraryItems, UIOptions } from '@excalidraw/excalidraw/types/types';
-import { ExcalidrawElement, Theme } from '@excalidraw/excalidraw/types/element/types';
+import { BinaryFileData, ExcalidrawImperativeAPI, LibraryItems, UIOptions } from '@excalidraw/excalidraw/types';
+import { ExcalidrawElement, Theme } from '@excalidraw/excalidraw/element/types';
+import '@excalidraw/excalidraw/index.css';
 
 let excalidrawApi: ExcalidrawImperativeAPI | null = null;
 let currentVersionSum: number = 0;
 let isLibraryLoading: boolean = false;
 let libraryItemsRef: LibraryItems = [];
 
-const theme = document.getElementById("root")?.getAttribute('data-theme');
+const theme = (document.getElementById("root")?.getAttribute('data-theme') as Theme) || "light"; // Default to 'light' theme
 
 function calculateElementVersionSum(elements: readonly ExcalidrawElement[]): number {
     return elements.reduce((acc: number, e: ExcalidrawElement) => acc + e.version, 0);
@@ -122,7 +123,7 @@ if ((window as any).chrome.webview === undefined) {
 }
 
 function App() {
-    const uiOptions : UIOptions = {
+    const uiOptions: UIOptions = {
         canvasActions: {
             loadScene: false,
             saveToActiveFile: false
@@ -165,13 +166,13 @@ function App() {
             <Excalidraw
                 excalidrawAPI={(api) => {
                     excalidrawApi = api;
-                    (window as any).chrome.webview.postMessage({ event: 'onReady' });
+                        (window as any).chrome.webview.postMessage({ event: 'onReady' });
                 }}
                 theme={theme as Theme}
                 UIOptions={uiOptions}
                 onChange={handleOnChangeEvent}
                 onLibraryChange={handleOnLibraryChange}
-                />
+            />
         </div>
     )
 }
