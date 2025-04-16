@@ -56,7 +56,8 @@ public class WebViewManager : IDisposable
             var indexHtmlContent = File.ReadAllText(indexHtmlPath);
             indexHtmlContent = indexHtmlContent
                 .Replace("<!--replace-with-web-view-base-url-->", "<base href=\"http://excalidraw-editor-host/\" />")
-                .Replace("replace-with-export-source", Constants.MarketplaceUrl);
+                .Replace("replace-with-export-source", Constants.MarketplaceUrl)
+                .Replace("window.EXCALIDRAW_ASSET_PATH = \"/\";", "window.EXCALIDRAW_ASSET_PATH = \"http://excalidraw-editor-host/\";");
 
             indexHtmlContent = indexHtmlContent.Replace("replace-with-theme", _extensionConfiguration.GetVsTheme());
 
