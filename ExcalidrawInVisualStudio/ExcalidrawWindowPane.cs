@@ -1,4 +1,8 @@
-﻿using System.Collections.Generic;
+﻿using EnvDTE;
+using Microsoft.VisualStudio.OLE.Interop;
+using Microsoft.VisualStudio.PlatformUI;
+using Microsoft.VisualStudio.Threading;
+using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
 using System.Linq;
@@ -6,9 +10,6 @@ using System.Runtime.InteropServices;
 using System.Text;
 using System.Text.Json;
 using System.Windows.Forms;
-using EnvDTE;
-using Microsoft.VisualStudio.PlatformUI;
-using Microsoft.VisualStudio.Threading;
 using Debugger = System.Diagnostics.Debugger;
 
 namespace ExcalidrawInVisualStudio;
@@ -18,7 +19,8 @@ public class ExcalidrawWindowPane :
     WindowPane,
     IVsPersistDocData,
     IVsFileChangeEvents,
-    IVsDocDataFileChangeControl
+    IVsDocDataFileChangeControl,
+    IPersistFileFormat
 {
     // I'm making this timeout long because Visual Studio can be quite busy loading a large project and if it's
     // re-loading an excalidraw file we may be hanging around for a while. We're not blocking the Visual Studio
@@ -40,6 +42,12 @@ public class ExcalidrawWindowPane :
 
     // Cookie for the subscription to the file system notification events.
     private uint _vsFileChangeCookie;
+
+    // IPersistFileFormat implementation
+    private const uint FormatIndex = 0;
+    private const string FormatName = "Excalidraw";
+    private const string FormatExtension = ".excalidraw";
+    private const char endLine = (char)10;
 
     private readonly Dictionary<string, string> _commandMappings = new();
 
@@ -268,7 +276,6 @@ public class ExcalidrawWindowPane :
                     return VSConstants.E_INVALIDARG;
             }
 
-            // If the save operation was successful, clear the dirty flag.
             _isDirty = false;
 
             return VSConstants.S_OK;
@@ -481,5 +488,162 @@ public class ExcalidrawWindowPane :
                 _vsFileChangeCookie = VSConstants.VSCOOKIE_NIL;
             }
         }
+    }
+
+    #region IPersistFileFormat implementation
+
+    public int GetClassID(out Guid pClassID)
+    {
+        ThreadHelper.ThrowIfNotOnUIThread();
+        ((IPersist)this).GetClassID(out pClassID);
+        return VSConstants.S_OK;
+    }
+
+    public int IsDirty(out int pfIsDirty)
+    {
+        pfIsDirty = _isDirty ? 1 : 0;
+        return VSConstants.S_OK;
+    }
+
+    public int InitNew(uint fFileFormat)
+    {
+        _isDirty = false;
+        return VSConstants.S_OK;
+    }
+
+    public int Load(string pszFilename, uint grfMode, int fReadOnly)
+    {
+        ThreadHelper.ThrowIfNotOnUIThread();
+        if ((pszFilename == null) &&
+            ((_filename == null) || (_filename.Length == 0)))
+        {
+            throw new ArgumentNullException("pszFilename");
+        }
+
+        bool isReload = false;
+
+        // If the new file name is null, then this operation is a reload
+        if (pszFilename == null)
+        {
+            isReload = true;
+        }
+
+        // Show the wait cursor while loading the file
+        IVsUIShell vsUiShell = (IVsUIShell)GetService(typeof(SVsUIShell));
+        if (vsUiShell != null)
+        {
+            // Note: we don't want to throw or exit if this call fails, so
+            // don't check the return code.
+            vsUiShell.SetWaitCursor();
+        }
+
+        // Set the new file name
+        if (!isReload)
+        {
+            // Unsubscribe from the notification of the changes in the previous file.
+            _filename = pszFilename;
+        }
+        // Load the file
+        LoadScene();
+        _isDirty = false;
+
+        // Notify the load or reload
+        NotifyDocChanged();
+        return VSConstants.S_OK;
+    }
+
+    public int Save(string pszFilename, int remember, uint nFormatIndex)
+    {
+        ThreadHelper.ThrowIfNotOnUIThread();
+        if (!string.IsNullOrEmpty(pszFilename))
+        {
+            _filename = pszFilename;
+        }
+        // Save using existing logic
+        SetFileChangeNotification(_filename, false);
+        if (_filename.EndsWith(Constants.FileExtensionEmbeddedImage, StringComparison.OrdinalIgnoreCase))
+        {
+            ThreadHelper.JoinableTaskFactory.RunAsync(async () =>
+            {
+                await _webViewManager.SaveScenePngAsync();
+                SetFileChangeNotification(_filename, true);
+                _isDirty = false;
+            }).FileAndForget("excalidraw");
+        }
+        else
+        {
+            ThreadHelper.JoinableTaskFactory.RunAsync(async () =>
+            {
+                await _webViewManager.SaveSceneJsonAsync();
+                SetFileChangeNotification(_filename, true);
+                _isDirty = false;
+            }).FileAndForget("excalidraw");
+        }
+        return VSConstants.S_OK;
+    }
+
+    public int SaveCompleted(string pszFilename)
+    {
+        _isDirty = false;
+        return VSConstants.S_OK;
+    }
+
+    public int GetCurFile(out string pszFilename, out uint pnFormatIndex)
+    {
+        pszFilename = _filename;
+        pnFormatIndex = FormatIndex;
+        return VSConstants.S_OK;
+    }
+
+    public int GetFormatList(out string pbstrFormatList)
+    {
+        string formatList = string.Format(CultureInfo.CurrentCulture, "{0}} (*{1}){2}*{1}{2}{2}", FormatName, FormatExtension, endLine);
+        pbstrFormatList = formatList;
+        return VSConstants.S_OK;
+    }
+
+    #endregion
+
+    /// <summary>
+    /// Gets an instance of the RunningDocumentTable (RDT) service which manages the set of currently open
+    /// documents in the environment and then notifies the client that an open document has changed.
+    /// </summary>
+    private void NotifyDocChanged()
+    {
+        ThreadHelper.ThrowIfNotOnUIThread();
+
+        // Make sure that we have a file name
+        if (_filename.Length == 0)
+        {
+            return;
+        }
+
+        // Get a reference to the Running Document Table
+        IVsRunningDocumentTable runningDocTable = (IVsRunningDocumentTable)GetService(typeof(SVsRunningDocumentTable));
+
+        // Lock the document
+        uint docCookie;
+        IVsHierarchy hierarchy;
+        uint itemID;
+        IntPtr docData;
+        int hr = runningDocTable.FindAndLockDocument(
+            (uint)_VSRDTFLAGS.RDT_ReadLock,
+            _filename,
+            out hierarchy,
+            out itemID,
+            out docData,
+            out docCookie
+        );
+        ErrorHandler.ThrowOnFailure(hr);
+
+        // Send the notification
+        hr = runningDocTable.NotifyDocumentChanged(docCookie, (uint)__VSRDTATTRIB.RDTA_DocDataReloaded);
+
+        // Unlock the document.
+        // Note that we have to unlock the document even if the previous call failed.
+        runningDocTable.UnlockDocument((uint)_VSRDTFLAGS.RDT_ReadLock, docCookie);
+
+        // Check ff the call to NotifyDocChanged failed.
+        ErrorHandler.ThrowOnFailure(hr);
     }
 }
