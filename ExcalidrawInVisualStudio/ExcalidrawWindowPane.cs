@@ -10,7 +10,6 @@ using System.Runtime.InteropServices;
 using System.Text;
 using System.Text.Json;
 using System.Windows.Forms;
-using Debugger = System.Diagnostics.Debugger;
 
 namespace ExcalidrawInVisualStudio;
 
@@ -241,11 +240,11 @@ public class ExcalidrawWindowPane :
 
         try
         {
-            SetFileChangeNotification(_filename, false);
             switch (dwSave)
             {
                 case VSSAVEFLAGS.VSSAVE_Save:
                 case VSSAVEFLAGS.VSSAVE_SilentSave:
+                    SetFileChangeNotification(_filename, false);
                     ThreadHelper.JoinableTaskFactory.RunAsync(async () =>
                     {
                         if (_filename.EndsWith(Constants.FileExtensionEmbeddedImage, StringComparison.OrdinalIgnoreCase))
@@ -262,14 +261,29 @@ public class ExcalidrawWindowPane :
 
                 case VSSAVEFLAGS.VSSAVE_SaveAs:
                 case VSSAVEFLAGS.VSSAVE_SaveCopyAs:
-
-                    Debugger.Break();
-
-                    // TODO: Implement your logic to handle "Save As" operations.
-                    // This might involve showing a Save File dialog and then saving the data to the chosen file.
-                    // string newPath = ShowSaveFileDialog();
-                    // File.WriteAllText(newPath, serializedData);
-                    // pbstrMkDocumentNew = newPath;
+                    SetFileChangeNotification(_filename, false);
+                    using (var saveFileDialog = new SaveFileDialog())
+                    {
+                        saveFileDialog.Filter = $"Excalidraw files (*{FormatExtension})|*{FormatExtension}|All files (*.*)|*.*";
+                        saveFileDialog.FileName = Path.GetFileName(_filename);
+                        if (saveFileDialog.ShowDialog() == DialogResult.OK)
+                        {
+                            var newPath = saveFileDialog.FileName;
+                            if (_filename.EndsWith(Constants.FileExtensionEmbeddedImage, StringComparison.OrdinalIgnoreCase))
+                            {
+                                File.WriteAllBytes(newPath, File.ReadAllBytes(_filename));
+                            }
+                            else
+                            {
+                                File.WriteAllText(newPath, File.ReadAllText(_filename));
+                            }
+                            pbstrMkDocumentNew = newPath;
+                        }
+                        else
+                        {
+                            pfSaveCanceled = 1;
+                        }
+                    }
                     break;
 
                 default:
@@ -597,7 +611,7 @@ public class ExcalidrawWindowPane :
 
     public int GetFormatList(out string pbstrFormatList)
     {
-        string formatList = string.Format(CultureInfo.CurrentCulture, "{0}} (*{1}){2}*{1}{2}{2}", FormatName, FormatExtension, endLine);
+        string formatList = string.Format(CultureInfo.CurrentCulture, "{0} (*{1}){2}*{1}{2}{2}", FormatName, FormatExtension, endLine);
         pbstrFormatList = formatList;
         return VSConstants.S_OK;
     }
