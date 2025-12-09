@@ -70,6 +70,7 @@
     <Compile Include="WebViewManager.cs" />
   </ItemGroup>
   <ItemGroup>
+    <Content Include="Resources\excalidraw.svg" />
     <VSCTCompile Include="VSCommandTable.vsct">
       <ResourceName>Menus.ctmenu</ResourceName>
       <Generator>VsctGenerator</Generator>
